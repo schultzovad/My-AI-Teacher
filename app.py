@@ -26,7 +26,7 @@ if uploaded_file is not None:
     
     if st.button('✨ Explain it to me'):
         
-        # KEY CHANGE: Instruction for AI in English
+        # ZMENA JE TU: Inštrukcia, aby AI odpovedala v jazyku poznámok
         prompt = """
         You are a friendly and patient teacher. 
         Look at this image/document and do the following:
@@ -35,13 +35,14 @@ if uploaded_file is not None:
         3. Use a real-life example for complex parts.
         4. Provide 3 short review questions at the end.
         
-        Answer in English, use clear formatting, bullet points, and bold text.
+        IMPORTANT: Use the same language for your response as the language used in the notes.
+        Use clear formatting, bullet points, and bold text.
         """
         
-        with st.spinner('Give me a second, I am reading your notes...'):
+        with st.spinner('Reading your notes...'):
             try:
                 response = model.generate_content([prompt, image])
-                st.success("Done! Here is your explanation:")
+                st.success("Done!")
                 st.markdown("---")
                 st.markdown(response.text)
             except Exception as e:
