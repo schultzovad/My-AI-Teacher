@@ -11,42 +11,49 @@ if "GOOGLE_API_KEY" in st.secrets:
 else:
     st.error("Missing API Key! Please add it to Streamlit Secrets.")
 
-model = genai.GenerativeModel('gemini-pro-vision')
+# Initialize the model
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-# 3. APP DESIGN
-st.title("📚 Your AI Tutor")
-st.subheader("Upload a photo of your notes and I'll explain it!")
+# 3. APP INTERFACE
+st.title("📚 AI Tutor")
+st.subheader("Turn your notes into clear explanations!")
 
 # File uploader
-uploaded_file = st.file_uploader("Choose a photo (JPG, PNG) or PDF...", type=["jpg", "jpeg", "png", "pdf"])
+uploaded_file = st.file_uploader("Upload a photo of your notes (JPG, PNG, PDF)", type=["jpg", "jpeg", "png", "pdf"])
 
 if uploaded_file is not None:
+    # Display the uploaded image
     image = Image.open(uploaded_file)
     st.image(image, caption='Notes uploaded successfully!', use_column_width=True)
     
-    if st.button('✨ Explain it to me'):
+    if st.button('✨ Explain these notes'):
         
-        # ZMENA JE TU: Inštrukcia, aby AI odpovedala v jazyku poznámok
+        # Instruction for the AI
         prompt = """
-        You are a friendly and patient teacher. 
-        Look at this image/document and do the following:
-        1. Summarize what these notes are about.
-        2. Explain the main concepts and topics simply.
-        3. Use a real-life example for complex parts.
-        4. Provide 3 short review questions at the end.
+        You are a friendly and expert teacher. 
+        Analyze the provided image/document and follow these steps:
+        1. Give a brief summary of the topic.
+        2. Explain the main concepts or formulas in a simple way.
+        3. Provide a real-world example to help me understand better.
+        4. End with 3 quick review questions.
         
-        IMPORTANT: Use the same language for your response as the language used in the notes.
-        Use clear formatting, bullet points, and bold text.
+        IMPORTANT: Your response MUST be in the same language as the notes in the image.
+        Use clean Markdown formatting, bullet points, and bold text for readability.
         """
         
-        with st.spinner('Reading your notes...'):
+        with st.spinner('Analyzing your notes... please wait.'):
             try:
+                # Generate content
                 response = model.generate_content([prompt, image])
-                st.success("Done!")
+                
+                st.success("Analysis complete!")
                 st.markdown("---")
+                # Output the result
                 st.markdown(response.text)
+                
             except Exception as e:
-                st.error(f"Ups, something went wrong: {e}")
+                st.error(f"An error occurred: {e}")
 
+# Footer
 st.markdown("---")
-st.caption("Created for your academic success 🎓")
+st.caption("Powered by Gemini AI | Designed for your success 🎓")
