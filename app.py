@@ -2,58 +2,50 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# 1. NASTAVENIE STRÁNKY
-st.set_page_config(page_title="AI Doučovateľ", layout="centered")
+# 1. PAGE SETUP
+st.set_page_config(page_title="AI Tutor", layout="centered")
 
-# 2. BEZPEČNÉ NAČÍTANIE API KĽÚČA
-# Kľúč vložíš v Streamlite do Settings -> Secrets
+# 2. API KEY SETUP
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Chýba API kľúč! Prosím, vlož ho do Secrets v Streamlit nastaveniach.")
+    st.error("Missing API Key! Please add it to Streamlit Secrets.")
 
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# 3. DIZAJN APLIKÁCIE
-st.title("📚 Tvoj AI Doučovateľ")
-st.subheader("Nahraj fotku a ja ti učivo vysvetlím!")
+# 3. APP DESIGN
+st.title("📚 Your AI Tutor")
+st.subheader("Upload a photo of your notes and I'll explain it!")
 
-# Pole na nahranie súboru
-uploaded_file = st.file_uploader("Vyber fotku poznámok (JPG, PNG) alebo PDF...", type=["jpg", "jpeg", "png", "pdf"])
+# File uploader
+uploaded_file = st.file_uploader("Choose a photo (JPG, PNG) or PDF...", type=["jpg", "jpeg", "png", "pdf"])
 
 if uploaded_file is not None:
-    # Zobrazenie nahranej fotky
     image = Image.open(uploaded_file)
-    st.image(image, caption='Tvoje poznámky sú nahrané!', use_column_width=True)
+    st.image(image, caption='Notes uploaded successfully!', use_column_width=True)
     
-    # Tlačidlo na spustenie analýzy
-    if st.button('✨ Vysvetli mi to ľudsky'):
+    if st.button('✨ Explain it to me'):
         
-        # Inštrukcia pre AI (Prompt)
+        # KEY CHANGE: Instruction for AI in English
         prompt = """
-        Si priateľský a trpezlivý učiteľ, ktorý chce študentovi pomôcť pochopiť učivo. 
-        Pozri sa na tento obrázok/dokument a urob nasledujúce:
-        1. Stručne zhrň, o čom sú tieto poznámky.
-        2. Vysvetli hlavné pojmy a tému tak, aby to pochopil aj niekto, kto na hodine chýbal.
-        3. Ak je tam niečo zložité, použi príklad zo života.
-        4. Na záver pridaj 3 krátke kontrolné otázky, aby si študent overil, či to pochopil.
+        You are a friendly and patient teacher. 
+        Look at this image/document and do the following:
+        1. Summarize what these notes are about.
+        2. Explain the main concepts and topics simply.
+        3. Use a real-life example for complex parts.
+        4. Provide 3 short review questions at the end.
         
-        Odpovedaj v slovenskom jazyku, prehľadne (používaj odrážky a tučné písmo).
+        Answer in English, use clear formatting, bullet points, and bold text.
         """
         
-        with st.spinner('Daj mi chvíľku, čítam tvoje poznámky...'):
+        with st.spinner('Give me a second, I am reading your notes...'):
             try:
-                # Odoslanie obrázka do AI
                 response = model.generate_content([prompt, image])
-                
-                # Zobrazenie výsledku
-                st.success("Hotovo! Tu je tvoj výklad:")
+                st.success("Done! Here is your explanation:")
                 st.markdown("---")
                 st.markdown(response.text)
-                
             except Exception as e:
-                st.error(f"Ups, niečo sa nepodarilo: {e}")
+                st.error(f"Ups, something went wrong: {e}")
 
-# Päta aplikácie
 st.markdown("---")
-st.caption("Vytvorené pre tvoj lepší prospech 🎓")
+st.caption("Created for your academic success 🎓")
