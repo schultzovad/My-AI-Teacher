@@ -11,7 +11,7 @@ if "GOOGLE_API_KEY" in st.secrets:
 else:
     st.error("Missing API Key! Please add it to Streamlit Secrets.")
 
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-pro-vision')
 
 # 3. APP DESIGN
 st.title("📚 Your AI Tutor")
