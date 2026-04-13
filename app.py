@@ -3,6 +3,7 @@ import google.generativeai as genai
 import json
 import os
 import re
+import unicodedata
 
 # 1. SETUP
 st.set_page_config(page_title="AI Tutor Pro", layout="wide", page_icon="🎓")
@@ -10,7 +11,7 @@ st.set_page_config(page_title="AI Tutor Pro", layout="wide", page_icon="🎓")
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Missing API Key!")
+    st.error("Missing API Key in Secrets!")
 
 AVAILABLE_MODELS = ['gemini-flash-latest', 'gemini-1.5-flash']
 HISTORY_DIR = "chat_history"
@@ -36,13 +37,12 @@ def load_all_chats():
     return chats
 
 def slugify(text):
-    # Odstráni diakritiku a divné znaky pre bezpečnosť súborov
-    import unicodedata
+    # Odstránenie diakritiky a špeciálnych znakov pre bezpečnosť súborov
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
     clean = re.sub(r'[^\w\s-]', '', text).strip()
     return clean[:25] if clean else "Untitled_Chat"
 
-# NAČÍTANIE
+# NAČÍTANIE DÁT
 if "chats" not in st.session_state:
     st.session_state.chats = load_all_chats()
     if not st.session_state.chats:
@@ -65,53 +65,65 @@ with st.sidebar:
     for chat_name in list(st.session_state.chats.keys()):
         col1, col2 = st.columns([0.8, 0.2])
         with col1:
-            style = "primary" if chat_name == st.session_state.current_chat else "secondary"
-            if st.button(f"💬 {chat_name}", key=f"btn_{chat_name}", use_container_width=True, type=style):
+            btn_style = "primary" if chat_name == st.session_state.current_chat else "secondary"
+            if st.button(f"💬 {chat_name}", key=f"btn_{chat_name}", use_container_width=True, type=btn_style):
                 st.session_state.current_chat = chat_name
                 st.rerun()
         with col2:
             if st.button("🗑️", key=f"del_{chat_name}"):
-                try: 
-                    os.remove(os.path.join(HISTORY_DIR, f"{chat_name}.json"))
+                try: os.remove(os.path.join(HISTORY_DIR, f"{chat_name}.json"))
                 except: pass
                 del st.session_state.chats[chat_name]
                 st.session_state.current_chat = list(st.session_state.chats.keys())[0] if st.session_state.chats else "New Chat"
-                if "New Chat" not in st.session_state.chats:
-                    st.session_state.chats["New Chat"] = []
+                if "New Chat" not in st.session_state.chats: st.session_state.chats["New Chat"] = []
                 st.rerun()
 
 # 3. MAIN UI
 st.title(f"🎓 {st.session_state.current_chat}")
-# Bezpečná kontrola existencie četu
 messages = st.session_state.chats.get(st.session_state.current_chat, [])
 
 for m in messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# 4. INPUT
+# 4. INPUT & ATTACHMENTS
 st.write("---")
-uploaded_files = st.file_uploader("Upload", type=["jpg", "jpeg", "png", "pdf"], accept_multiple_files=True, label_visibility="collapsed")
+with st.container():
+    uploaded_files = st.file_uploader("Upload notes", type=["jpg", "jpeg", "png", "pdf"], accept_multiple_files=True, label_visibility="collapsed", key=f"up_{st.session_state.current_chat}")
+    
+    analyze_clicked = False
+    if uploaded_files:
+        if st.button("✨ Explain my uploaded files"):
+            analyze_clicked = True
 
 if input_text := st.chat_input("Ask your teacher..."):
-    # Fix pre KeyError: Skontrolujeme, či čet existuje, ak nie, vytvoríme ho
+    prompt = input_text
+    process = True
+elif analyze_clicked:
+    prompt = "Please explain these files like a teacher and solve any problems."
+    process = True
+else:
+    process = False
+
+if process:
+    # Poistka pre existenciu četu
     if st.session_state.current_chat not in st.session_state.chats:
-         st.session_state.chats[st.session_state.current_chat] = []
-    
-    st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": input_text})
+        st.session_state.chats[st.session_state.current_chat] = []
+        
+    st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": prompt})
     save_chat(st.session_state.current_chat, st.session_state.chats[st.session_state.current_chat])
     st.rerun()
 
-# 5. EFEKTÍVNE GENEROVANIE
+# 5. GENERATING RESPONSE (With Graceful Error Handling)
 if messages and messages[-1]["role"] == "user":
     with st.chat_message("assistant"):
-        with st.status("Teaching in progress...", expanded=True) as status:
+        with st.status("Teacher is preparing the answer...", expanded=True) as status:
             
-            # Špeciálna inštrukcia na šetrenie limitov
-            is_generic_name = st.session_state.current_chat.startswith("Chat_") or st.session_state.current_chat == "New Chat"
-            needs_title = is_generic_name and len(messages) <= 2
+            # Nastavenie pre automatické meno
+            is_new = st.session_state.current_chat.startswith("Chat_") or st.session_state.current_chat == "New Chat"
+            needs_title = is_new and len(messages) <= 2
             
-            system_msg = "You are a kind teacher. Respond in user's language."
+            system_msg = "You are a kind teacher. Respond in the user's language."
             if needs_title:
                 system_msg += " IMPORTANT: Start your response with [TITLE: 2_word_english_title] then a newline, then your explanation."
 
@@ -124,50 +136,50 @@ if messages and messages[-1]["role"] == "user":
 
             try:
                 model = genai.GenerativeModel('gemini-flash-latest')
-                response = model.generate_content(payload).text
+                response_text = model.generate_content(payload).text
                 
-                final_response = response
-                if "[TITLE:" in response:
-                    try:
-                        parts = response.split("]", 1)
-                        title_part = parts[0].replace("[TITLE:", "").strip()
-                        final_response = parts[1].strip()
-                        
-                        new_title = slugify(title_part)
-                        old_name = st.session_state.current_chat
-                        
-                        if new_title and new_title != old_name:
-                            old_path = os.path.join(HISTORY_DIR, f"{old_name}.json")
+                final_text = response_text
+                # Spracovanie názvu
+                if "[TITLE:" in response_text:
+                    parts = response_text.split("]", 1)
+                    title_suggestion = parts[0].replace("[TITLE:", "").strip()
+                    final_text = parts[1].strip()
+                    
+                    new_title = slugify(title_suggestion)
+                    old_name = st.session_state.current_chat
+                    if new_title and new_title != old_name:
+                        old_path = os.path.join(HISTORY_DIR, f"{old_name}.json")
+                        new_path = os.path.join(HISTORY_DIR, f"{new_title}.json")
+                        if os.path.exists(new_path):
+                            new_title = f"{new_title}_{os.urandom(2).hex()}"
                             new_path = os.path.join(HISTORY_DIR, f"{new_title}.json")
-                            
-                            # Ak už taký názov existuje, pridáme číslo
-                            if os.path.exists(new_path):
-                                new_title = f"{new_title}_{os.urandom(2).hex()}"
-                                new_path = os.path.join(HISTORY_DIR, f"{new_title}.json")
+                        
+                        if os.path.exists(old_path):
+                            os.rename(old_path, new_path)
+                        
+                        st.session_state.chats[new_title] = st.session_state.chats.pop(old_name)
+                        st.session_state.current_chat = new_title
 
-                            if os.path.exists(old_path):
-                                os.rename(old_path, new_path)
-                            
-                            st.session_state.chats[new_title] = st.session_state.chats.pop(old_name)
-                            st.session_state.current_chat = new_title
-                    except Exception as e:
-                        print(f"Naming error: {e}")
-
-                status.update(label="Ready!", state="complete", expanded=False)
-                st.markdown(final_response)
+                status.update(label="Answer ready!", state="complete", expanded=False)
+                st.markdown(final_text)
                 
-                # Opäť poistka pre KeyError
+                # Uloženie do pamäte a na disk
                 if st.session_state.current_chat not in st.session_state.chats:
-                     st.session_state.chats[st.session_state.current_chat] = []
-                     
-                st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": final_response})
+                    st.session_state.chats[st.session_state.current_chat] = []
+                    
+                st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": final_text})
                 save_chat(st.session_state.current_chat, st.session_state.chats[st.session_state.current_chat])
                 st.rerun()
 
             except Exception as e:
-                if "429" in str(e):
+                err_str = str(e)
+                if "429" in err_str:
                     status.update(label="Daily limit reached", state="error")
-                    st.warning("You've hit the 20-message daily limit. See you tomorrow! 🌙")
+                    st.warning("😊 **Môj AI mozog si potrebuje oddýchnuť.** Dnes sme už prebrali veľa učiva a dosiahli sme denný limit (20 správ). Stretneme sa zajtra?")
+                elif "safety" in err_str.lower():
+                    status.update(label="Safety Filter", state="error")
+                    st.info("⚠️ **O tomto téme nemôžem hovoriť.** Moje bezpečnostné pravidlá mi to nedovoľujú. Skúsme inú otázku!")
                 else:
-                    status.update(label="Error occurred", state="error")
-                    st.error(f"Error: {e}")
+                    status.update(label="Technical hiccup", state="error")
+                    st.error("🔌 **Mám malý technický problém.** Skús poslať správu znova, možno sa mi len zamotal kábel.")
+                st.stop()
