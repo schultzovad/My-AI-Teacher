@@ -14,46 +14,50 @@ AVAILABLE_MODELS = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-pro-lates
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 2. TITULOK A HISTÓRIA ČETU (Vypíše sa ako prvá)
+# 2. TITULOK A HISTÓRIA ČETU
 st.title("🎓 Tvoj osobný AI učiteľ")
-st.caption("Nahraj fotku a pýtaj sa. Som tu, aby som ti pomohol všetko pochopiť! 😊")
 
-# Vypísanie všetkých správ, ktoré už v čete sú
+# Vypísanie histórie (toto bude rásť a posúvať všetko pod sebou nižšie)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 3. SPODNÁ ČASŤ - TU JE ZMENA (Nahrávač je až pod históriou)
-st.write("---") 
+# 3. MIESTO PRE NOVÚ ODPOVEĎ (keď práve AI píše)
+placeholder_for_new_response = st.container()
 
-# Tento kontajner zabezpečí, že nahrávač bude vždy na konci
+st.write("---")
+
+# 4. NAHRÁVAČ SÚBOROV (Teraz je až pod históriou)
 with st.container():
     uploaded_files = st.file_uploader(
         "Prilož poznámky alebo fotku", 
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True,
         label_visibility="collapsed",
-        key="file_uploader_bottom" # Unikátny kľúč pre stabilitu
+        key="file_uploader_fixed"
     )
+    
+    # Tlačidlo "Vysvetli" hneď pod nahrávačom
+    analyze_clicked = False
+    if uploaded_files:
+        if st.button("✨ Vysvetli mi nahrané súbory"):
+            analyze_clicked = True
 
-# 4. LOGIKA VSTUPU
+# 5. ČETOVACIE POLE (Úplne naspodu)
 input_text = st.chat_input("Opýtaj sa na čokoľvek...")
 
-# Tlačidlo sa ukáže len ak sú nahrané súbory
-analyze_clicked = False
-if uploaded_files:
-    if st.button("✨ Vysvetli mi nahrané súbory"):
-        analyze_clicked = True
-
+# 6. LOGIKA SPRACOVANIA
 if input_text or analyze_clicked:
-    # Určenie textu
     prompt = input_text if input_text else "Prosím, vysvetli mi tieto súbory ako učiteľ."
     
-    # Pridanie do histórie
+    # Pridáme do histórie a hneď zobrazíme
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    # Musíme urobiť rerun, aby sa nahrávač posunul pod novú správu
+    # Alebo to môžeme zobraziť manuálne:
+    st.rerun()
 
+# Táto časť sa spustí po rerun-e, ak posledná správa je od užívateľa
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     with st.chat_message("assistant"):
         container = st.empty()
         payload = []
@@ -66,14 +70,17 @@ if input_text or analyze_clicked:
         """
         payload.append(teacher_prompt)
         
+        # Posledné správy pre kontext
         for m in st.session_state.messages[-6:]:
             payload.append(f"{m['role']}: {m['content']}")
 
+        # Súbory (ak sú prítomné v nahrávači)
         if uploaded_files:
             for f in uploaded_files:
                 payload.append({'mime_type': f.type, 'data': f.getvalue()})
 
         success = False
+        full_response = ""
         for model_name in AVAILABLE_MODELS:
             if success: break
             try:
@@ -84,21 +91,17 @@ if input_text or analyze_clicked:
                     success = True
             except Exception as e:
                 if "429" in str(e): continue
-                else:
-                    st.error(f"Chyba: {e}")
-                    break
+                else: break
         
         if not success:
-            st.warning("⚠️ Prestávka na kávu. Skús o 30 sekúnd.")
-            full_response = "Daj mi prosím chvíľku, o 30 sekúnd budem opäť pri tebe! ☕😊"
+            full_response = "Daj mi prosím 30 sekúnd, pauza na kávu! ☕😊"
 
         container.markdown(full_response)
         st.session_state.messages.append({"role": "assistant", "content": full_response})
-        
-        # Po odoslaní môžeme stránku refreshnúť, aby sa vyčistil nahrávač
-        # st.rerun() 
+        # Opätovný rerun, aby sa nahrávač a chat_input vykreslili pod novou odpoveďou
+        st.rerun()
 
 with st.sidebar:
-    if st.button("🗑️ Nová téma (Vymazať čet)"):
+    if st.button("🗑️ Nová téma"):
         st.session_state.messages = []
         st.rerun()
