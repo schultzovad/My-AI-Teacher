@@ -130,4 +130,24 @@ if messages and messages[-1]["role"] == "user":
                 teacher_payload.append({'mime_type': f.type, 'data': f.getvalue()})
 
         model = genai.GenerativeModel('gemini-flash-latest')
-        response = model.generate_content(teacher
+        response = model.generate_content(teacher_payload)
+        teacher_text = response.text
+        container.markdown(teacher_text)
+        
+        st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": teacher_text})
+        save_chat(st.session_state.current_chat, st.session_state.chats[st.session_state.current_chat])
+
+        # --- AUTOMATICKÉ POMENOVANIE (ak je to prvá výmena) ---
+        if len(st.session_state.chats[st.session_state.current_chat]) <= 2 and st.session_state.current_chat.startswith("Chat_"):
+            naming_prompt = f"Based on this question: '{prompt}', generate a very short 2-3 word title for this chat in the language of the question. Return ONLY the title, nothing else."
+            new_title = model.generate_content(naming_prompt).text.strip()
+            
+            # Vyčistenie názvu od nepovolených znakov pre súbor
+            new_title = "".join(x for x in new_title if x.isalnum() or x in " -_")
+            
+            old_name = st.session_state.current_chat
+            rename_chat_file(old_name, new_title)
+            st.session_state.chats[new_title] = st.session_state.chats.pop(old_name)
+            st.session_state.current_chat = new_title
+        
+        st.rerun()
