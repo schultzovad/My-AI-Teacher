@@ -6,23 +6,16 @@ import re
 import unicodedata
 from datetime import datetime
 
-# 1. SETUP & MULTILINGUAL DICTIONARY
-st.set_page_config(
-    page_title="AI Tutor Pro", 
-    layout="wide", 
-    page_icon="🎓",
-    initial_sidebar_state="expanded" 
-)
+# 1. SETUP
+st.set_page_config(page_title="AI Tutor Pro", layout="wide", page_icon="🎓", initial_sidebar_state="expanded")
 
 LANG_MAP = {
-    "SK": {"title": "Konverzácie", "new_chat": "➕ Nový čet", "rename": "Premenovať:", "upload": "Nahrať poznámky", "explain": "✨ Vysvetli", "input": "Opýtaj sa...", "status_think": "Premýšľam...", "status_ready": "Hotovo!", "limit_label": "Limit!", "safety_label": "Filter", "error_label": "Chyba", "limit_msg": "Limit 20 správ dosiahnutý.", "safety_msg": "⚠️ Zakázané téma.", "error_msg": "🔌 Chyba.", "rename_btn": "Uložiť", "search": "🔍 Hľadať v histórii...", "clear_all": "🗑️ Zmazať všetko", "download": "📥 Stiahnuť čet"},
-    "EN": {"title": "Conversations", "new_chat": "➕ New Chat", "rename": "Rename:", "upload": "Attach notes", "explain": "✨ Explain", "input": "Ask...", "status_think": "Thinking...", "status_ready": "Ready!", "limit_label": "Limit!", "safety_label": "Filter", "error_label": "Error", "limit_msg": "Limit reached.", "safety_msg": "⚠️ Restricted topic.", "error_msg": "🔌 Error.", "rename_btn": "Save", "search": "🔍 Search history...", "clear_all": "🗑️ Clear all", "download": "📥 Download chat"},
-    "CZ": {"title": "Konverzace", "new_chat": "➕ Nový chat", "rename": "Přejmenovat:", "upload": "Poznámky", "explain": "✨ Vysvětli", "input": "Zeptej se...", "status_think": "Přemýšlím...", "status_ready": "Hotovo!", "limit_label": "Limit!", "safety_label": "Filtr", "error_label": "Chyba", "limit_msg": "Limit vyčerpán.", "safety_msg": "⚠️ Zakázané téma.", "error_msg": "🔌 Chyba.", "rename_btn": "Uložit", "search": "🔍 Hledat...", "clear_all": "🗑️ Smazat vše", "download": "📥 Stáhnout chat"}
+    "SK": {"title": "Konverzácie", "new_chat": "➕ Nový čet", "rename": "Premenovať:", "upload": "Nahrať poznámky", "explain": "✨ Vysvetli", "input": "Opýtaj sa...", "status_think": "Premýšľam...", "status_ready": "Hotovo!", "limit_label": "Limit!", "safety_label": "Filter", "error_label": "Chyba", "limit_msg": "Limit dosiahnutý.", "safety_msg": "⚠️ Zakázané.", "error_msg": "🔌 Chyba.", "rename_btn": "Uložiť", "search": "🔍 Hľadať v histórii...", "clear_all": "🗑️ Zmazať všetko", "download": "📥 Stiahnuť čet"},
+    "EN": {"title": "Conversations", "new_chat": "➕ New Chat", "rename": "Rename:", "upload": "Attach notes", "explain": "✨ Explain", "input": "Ask...", "status_think": "Thinking...", "status_ready": "Ready!", "limit_label": "Limit!", "safety_label": "Filter", "error_label": "Error", "limit_msg": "Limit reached.", "safety_msg": "⚠️ Restricted.", "error_msg": "🔌 Error.", "rename_btn": "Save", "search": "🔍 Search history...", "clear_all": "🗑️ Clear all", "download": "📥 Download chat"}
 }
 
-# --- SYSTÉMOVÉ FUNKCIE ---
 if "lang" not in st.session_state: st.session_state.lang = "SK"
-L = LANG_MAP.get(st.session_state.lang, LANG_MAP["SK"])
+L = LANG_MAP[st.session_state.lang]
 
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
@@ -30,9 +23,10 @@ if "GOOGLE_API_KEY" in st.secrets:
 HISTORY_DIR = "chat_history"
 if not os.path.exists(HISTORY_DIR): os.makedirs(HISTORY_DIR)
 
+# FUNKCIA NA UKLADANIE S DÁTUMOM
 def save_chat(name, msgs):
     data = {
-        "updated": datetime.now().strftime("%d.%m. %H:%M"),
+        "updated": datetime.now().strftime("%d.%m. %H:%M"), # TOTO JE TEN DÁTUM
         "messages": msgs
     }
     with open(os.path.join(HISTORY_DIR, f"{name}.json"), "w", encoding="utf-8") as f:
@@ -52,16 +46,15 @@ def slugify(text):
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
     return re.sub(r'[^\w\s-]', '', text).strip()[:20]
 
-# Inicializácia dát
 if "chats" not in st.session_state: st.session_state.chats = load_all()
 if not st.session_state.chats: st.session_state.chats = {"New Chat": {"updated": "", "messages": []}}
 if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.chats:
     st.session_state.current_chat = list(st.session_state.chats.keys())[0]
 
-# --- SIDEBAR (HISTÓRIA) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.selectbox("🌐 Language", options=list(LANG_MAP.keys()), key="lang")
-    L = LANG_MAP.get(st.session_state.lang, LANG_MAP["SK"])
+    L = LANG_MAP[st.session_state.lang]
     st.title(f"📂 {L['title']}")
     
     if st.button(L['new_chat'], use_container_width=True, type="primary"):
@@ -71,18 +64,18 @@ with st.sidebar:
         save_chat(nid, [])
         st.rerun()
 
-    search_term = st.text_input(L['search'], label_visibility="collapsed", placeholder=L['search'])
+    # TOTO JE TÁ LUPA (VYHĽADÁVANIE)
+    search_term = st.text_input(L['search'], placeholder=L['search'], label_visibility="collapsed")
     
     st.write("---")
     
-    # Zobrazenie zoznamu četov
     for cname in list(st.session_state.chats.keys()):
-        if search_term.lower() in cname.lower():
+        if search_term.lower() in cname.lower(): # Filtrovanie podľa lupy
             col1, col2 = st.columns([0.8, 0.2])
             with col1:
-                display_name = f"💬 {cname}"
                 subtext = st.session_state.chats[cname].get("updated", "")
-                if st.button(f"{display_name}\n\n{subtext}", key=f"b_{cname}", use_container_width=True, type="primary" if cname == st.session_state.current_chat else "secondary"):
+                # Zobrazenie mena a dátumu na tlačidle
+                if st.button(f"💬 {cname}\n{subtext}", key=f"b_{cname}", use_container_width=True, type="primary" if cname == st.session_state.current_chat else "secondary"):
                     st.session_state.current_chat = cname
                     st.rerun()
             with col2:
@@ -94,8 +87,11 @@ with st.sidebar:
                     st.rerun()
 
     st.write("---")
+    # TLAČIDLO NA ZMAZANIE VŠETKÉHO
     if st.button(L['clear_all'], use_container_width=True):
-        for f in os.listdir(HISTORY_DIR): os.remove(os.path.join(HISTORY_DIR, f))
+        for f in os.listdir(HISTORY_DIR): 
+            try: os.remove(os.path.join(HISTORY_DIR, f))
+            except: pass
         st.session_state.chats = {"New Chat": {"updated": "", "messages": []}}
         st.session_state.current_chat = "New Chat"
         st.rerun()
@@ -108,7 +104,7 @@ col_t1, col_t2 = st.columns([0.7, 0.3])
 with col_t1:
     st.title(f"🎓 {st.session_state.current_chat}")
 with col_t2:
-    # Export do textového súboru
+    # TLAČIDLO NA EXPORT
     chat_text = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in msgs])
     st.download_button(L['download'], data=chat_text, file_name=f"{st.session_state.current_chat}.txt", use_container_width=True)
 
