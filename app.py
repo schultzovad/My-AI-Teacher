@@ -4,7 +4,6 @@ import json
 import os
 import re
 import unicodedata
-from datetime import datetime
 
 # 1. ZÁKLADNÉ NASTAVENIE
 st.set_page_config(page_title="EduHub Pro", layout="wide", page_icon="🎓", initial_sidebar_state="expanded")
@@ -14,11 +13,11 @@ FORUM_DIR = "shared_forum"
 for d in [HISTORY_DIR, FORUM_DIR]:
     if not os.path.exists(d): os.makedirs(d)
 
-# API kľúč (ak ho máš v Secrets)
+# API kľúč
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
-# 2. KOMPLETNÝ PREKLADOVÝ SLOVNÍK (všetkých 9 jazykov)
+# 2. KOMPLETNÝ PREKLADOVÝ SLOVNÍK
 LANG_MAP = {
     "SK": {
         "chat": "💬 AI Tutor", "forum": "🏫 Fórum", "groups": "👥 Skupiny", 
@@ -115,11 +114,9 @@ LANG_MAP = {
 if "lang" not in st.session_state: st.session_state.lang = "SK"
 L = LANG_MAP[st.session_state.lang]
 
-# 3. POMOCNÉ FUNKCIE
+# 3. POMOCNÉ FUNKCIE (Bez času)
 def save_chat(name, msgs):
-    # TRIK: Uložíme čistý timestamp (univerzálny čas)
-    timestamp = datetime.now().timestamp()
-    data = {"timestamp": timestamp, "messages": msgs}
+    data = {"messages": msgs} # Ukladáme len správy
     with open(os.path.join(HISTORY_DIR, f"{name}.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
@@ -129,9 +126,7 @@ def load_all_chats():
     for f in [f for f in os.listdir(HISTORY_DIR) if f.endswith(".json")]:
         try:
             with open(os.path.join(HISTORY_DIR, f), "r", encoding="utf-8") as file:
-                content = json.load(file)
-                name = f.replace(".json", "")
-                chats[name] = content
+                chats[f.replace(".json", "")] = json.load(file)
         except: continue
     return chats
 
@@ -139,7 +134,7 @@ def slugify(text):
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
     return re.sub(r'[^\w\s-]', '', text).strip()[:20]
 
-# --- DYNAMICKÁ NAVIGÁCIA ---
+# --- UI NAVIGÁCIA ---
 tabs = st.tabs([L["chat"], L["forum"], L["groups"]])
 
 # ==========================================
@@ -148,7 +143,7 @@ tabs = st.tabs([L["chat"], L["forum"], L["groups"]])
 with tabs[0]:
     with st.sidebar:
         st.selectbox(L["lang_label"], options=list(LANG_MAP.keys()), key="lang")
-        L = LANG_MAP[st.session_state.lang] 
+        L = LANG_MAP[st.session_state.lang]
         st.title(f"📂 {L['chat']}")
         
         if st.button(L['new_chat'], use_container_width=True, type="primary"):
@@ -164,11 +159,8 @@ with tabs[0]:
             if search_term.lower() in cname.lower():
                 col_btn, col_del = st.columns([0.8, 0.2])
                 with col_btn:
-                    # ZOBRAZENIE ČASU: Prepočet na lokálny čas používateľa
-                    ts = all_chats[cname].get("timestamp")
-                    dt_display = datetime.fromtimestamp(ts).strftime("%d.%m. %H:%M") if ts else ""
-                    
-                    label = f"💬 {cname}\n{dt_display}"
+                    # ZOBRAZENIE: Už len čistý názov bez dátumu
+                    label = f"💬 {cname}"
                     if st.button(label, key=f"b_{cname}", use_container_width=True, type="primary" if cname == st.session_state.get("current_chat") else "secondary"):
                         st.session_state.current_chat = cname; st.rerun()
                 with col_del:
@@ -225,8 +217,7 @@ with tabs[0]:
                         save_chat(st.session_state.current_chat, msgs)
                         st.rerun()
                     except Exception as e:
-                        status.update(label=L['error'], state="error")
-                        st.error(str(e)); st.stop()
+                        st.error(str(e))
 
 # ==========================================
 # SEKCIA 2: FÓRUM
