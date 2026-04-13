@@ -6,10 +6,10 @@ import re
 import unicodedata
 from datetime import datetime
 
-# 1. SETUP
+# 1. ZÁKLADNÉ NASTAVENIE
 st.set_page_config(page_title="EduHub Pro", layout="wide", page_icon="🎓", initial_sidebar_state="expanded")
 
-# Adresáre
+# Adresáre pre dáta
 HISTORY_DIR = "chat_history"
 FORUM_DIR = "shared_forum"
 for d in [HISTORY_DIR, FORUM_DIR]:
@@ -17,24 +17,28 @@ for d in [HISTORY_DIR, FORUM_DIR]:
 
 SUBJECTS = ["Angličtina", "Matematika", "Dejepis", "Biológia", "Slovenčina", "Iné"]
 
+# API kľúč
+if "GOOGLE_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+
 # 2. KOMPLETNÝ PREKLADOVÝ SLOVNÍK (Všetkých 9 jazykov)
 LANG_MAP = {
-    "SK": {"chat": "💬 AI Tutor", "forum": "🏫 Fórum", "groups": "👥 Skupiny", "new_chat": "➕ Nový čet", "search": "🔍 Hľadať...", "upload": "📤 Nahrať", "subject": "Predmet", "files": "Súbory", "input": "Opýtaj sa AI...", "status_think": "Premýšľam...", "download": "📥 Stiahnuť"},
-    "EN": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Groups", "new_chat": "➕ New Chat", "search": "🔍 Search...", "upload": "📤 Upload", "subject": "Subject", "files": "Files", "input": "Ask AI...", "status_think": "Thinking...", "download": "📥 Download"},
-    "CZ": {"chat": "💬 AI Tutor", "forum": "🏫 Fórum", "groups": "👥 Skupiny", "new_chat": "➕ Nový chat", "search": "🔍 Hledat...", "upload": "📤 Nahrát", "subject": "Předmět", "files": "Soubory", "input": "Zeptej se AI...", "status_think": "Přemýšlím...", "download": "📥 Stáhnout"},
-    "FR": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Groupes", "new_chat": "➕ Nouveau chat", "search": "🔍 Chercher...", "upload": "📤 Charger", "subject": "Sujet", "files": "Fichiers", "input": "Demander à l'AI...", "status_think": "Réflexion...", "download": "📥 Télécharger"},
-    "DE": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Gruppen", "new_chat": "➕ Neuer Chat", "search": "🔍 Suchen...", "upload": "📤 Hochladen", "subject": "Fach", "files": "Dateien", "input": "Frag die KI...", "status_think": "Überlegen...", "download": "📥 Herunterladen"},
-    "ES": {"chat": "💬 AI Tutor", "forum": "🏫 Foro", "groups": "👥 Grupos", "new_chat": "➕ Nuevo chat", "search": "🔍 Buscar...", "upload": "📤 Subir", "subject": "Materia", "files": "Archivos", "input": "Pregunta a la IA...", "status_think": "Pensando...", "download": "📥 Descargar"},
-    "IT": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Gruppi", "new_chat": "➕ Nuova chat", "search": "🔍 Cerca...", "upload": "📤 Carica", "subject": "Materia", "files": "File", "input": "Chiedi all'IA...", "status_think": "Pensando...", "download": "📥 Scarica"},
-    "PL": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Grupy", "new_chat": "➕ Nowy czat", "search": "🔍 Szukaj...", "upload": "📤 Prześlij", "subject": "Przedmiot", "files": "Pliki", "input": "Zapytaj AI...", "status_think": "Myślenie...", "download": "📥 Pobierz"},
-    "UA": {"chat": "💬 AI Tutor", "forum": "🏫 Форум", "groups": "👥 Групи", "new_chat": "➕ Новий чат", "search": "🔍 Пошук...", "upload": "📤 Завантажити", "subject": "Предмет", "files": "Файли", "input": "Запитати AI...", "status_think": "Думаю...", "download": "📥 Завантажити"}
+    "SK": {"chat": "💬 AI Tutor", "forum": "🏫 Fórum", "groups": "👥 Skupiny", "new_chat": "➕ Nový čet", "search": "Hľadaj v histórii...", "upload": "📤 Nahrať", "subject": "Predmet", "files": "Súbory", "input": "Opýtaj sa AI...", "status_think": "Premýšľam...", "status_ready": "Hotovo!", "error": "Chyba", "download": "📥 Stiahnuť"},
+    "EN": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Groups", "new_chat": "➕ New Chat", "search": "Search in history...", "upload": "📤 Upload", "subject": "Subject", "files": "Files", "input": "Ask AI...", "status_think": "Thinking...", "status_ready": "Ready!", "error": "Error", "download": "📥 Download"},
+    "CZ": {"chat": "💬 AI Tutor", "forum": "🏫 Fórum", "groups": "👥 Skupiny", "new_chat": "➕ Nový chat", "search": "Hledat v historii...", "upload": "📤 Nahrát", "subject": "Předmět", "files": "Soubory", "input": "Zeptej se AI...", "status_think": "Přemýšlím...", "status_ready": "Hotovo!", "error": "Chyba", "download": "📥 Stáhnout"},
+    "FR": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Groupes", "new_chat": "➕ Nouveau chat", "search": "Chercher dans l'histoire...", "upload": "📤 Charger", "subject": "Sujet", "files": "Fichiers", "input": "Demander à l'AI...", "status_think": "Réflexion...", "status_ready": "Prêt !", "error": "Erreur", "download": "📥 Télécharger"},
+    "DE": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Gruppen", "new_chat": "➕ Neuer Chat", "search": "In der Historie suchen...", "upload": "📤 Hochladen", "subject": "Fach", "files": "Dateien", "input": "Frag die KI...", "status_think": "Überlegen...", "status_ready": "Fertig!", "error": "Fehler", "download": "📥 Herunterladen"},
+    "ES": {"chat": "💬 AI Tutor", "forum": "🏫 Foro", "groups": "👥 Grupos", "new_chat": "➕ Nuevo chat", "search": "Buscar en el historial...", "upload": "📤 Subir", "subject": "Materia", "files": "Archivos", "input": "Pregunta a la IA...", "status_think": "Pensando...", "status_ready": "¡Listo!", "error": "Error", "download": "📥 Descargar"},
+    "IT": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Gruppi", "new_chat": "➕ Nuova chat", "search": "Cerca nella cronologia...", "upload": "📤 Carica", "subject": "Materia", "files": "File", "input": "Chiedi all'IA...", "status_think": "Pensando...", "status_ready": "Pronto!", "error": "Errore", "download": "📥 Scarica"},
+    "PL": {"chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Grupy", "new_chat": "➕ Nowy czat", "search": "Szukaj w historii...", "upload": "📤 Prześlij", "subject": "Przedmiot", "files": "Pliki", "input": "Zapytaj AI...", "status_think": "Myślenie...", "status_ready": "Gotowe!", "error": "Błąd", "download": "📥 Pobierz"},
+    "UA": {"chat": "💬 AI Tutor", "forum": "🏫 Форум", "groups": "👥 Групи", "new_chat": "➕ Новий чат", "search": "Пошук в історії...", "upload": "📤 Завантажити", "subject": "Предмет", "files": "Файли", "input": "Запитати AI...", "status_think": "Думаю...", "status_ready": "Готово!", "error": "Помилка", "download": "📥 Завантажити"}
 }
 
-# Inicializácia jazyka
+# Inicializácia relácie
 if "lang" not in st.session_state: st.session_state.lang = "SK"
 L = LANG_MAP[st.session_state.lang]
 
-# --- POMOCNÉ FUNKCIE ---
+# 3. POMOCNÉ FUNKCIE
 def save_chat(name, msgs):
     data = {"updated": datetime.now().strftime("%d.%m. %H:%M"), "messages": msgs}
     with open(os.path.join(HISTORY_DIR, f"{name}.json"), "w", encoding="utf-8") as f:
@@ -56,12 +60,7 @@ def slugify(text):
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
     return re.sub(r'[^\w\s-]', '', text).strip()[:20]
 
-# Dáta
-if "chats" not in st.session_state: st.session_state.chats = load_all_chats()
-if not st.session_state.chats: st.session_state.chats = {"New Chat": {"updated": "", "messages": []}}
-if "current_chat" not in st.session_state: st.session_state.current_chat = list(st.session_state.chats.keys())[0]
-
-# --- DYNAMICKÉ TABS ---
+# --- DYNAMICKÁ NAVIGÁCIA ---
 tab_chat, tab_forum, tab_groups = st.tabs([L["chat"], L["forum"], L["groups"]])
 
 # ==========================================
@@ -70,79 +69,122 @@ tab_chat, tab_forum, tab_groups = st.tabs([L["chat"], L["forum"], L["groups"]])
 with tab_chat:
     with st.sidebar:
         st.selectbox("🌐 Language", options=list(LANG_MAP.keys()), key="lang")
-        L = LANG_MAP[st.session_state.lang] # Okamžitá aktualizácia prekladov
+        L = LANG_MAP[st.session_state.lang] # Okamžitý update prekladu
         st.title(f"📂 {L['chat']}")
-        if st.button(L['new_chat'], use_container_width=True, type="primary"):
-            nid = f"Chat_{len(st.session_state.chats)+1}"
-            st.session_state.chats[nid] = {"updated": "", "messages": []}
-            st.session_state.current_chat = nid; save_chat(nid, []); st.rerun()
         
-        search = st.text_input(L['search'], label_visibility="collapsed")
+        if st.button(L['new_chat'], use_container_width=True, type="primary"):
+            nid = f"Chat_{len(load_all_chats())+1}"
+            save_chat(nid, [])
+            st.session_state.current_chat = nid
+            st.rerun()
+        
+        search_term = st.text_input("Search", placeholder=L['search'], label_visibility="collapsed")
         st.write("---")
-        for cname in list(st.session_state.chats.keys()):
-            if search.lower() in cname.lower():
-                dt = st.session_state.chats[cname].get("updated", "")
-                if st.button(f"💬 {cname}\n{dt}", key=f"b_{cname}", use_container_width=True, type="primary" if cname == st.session_state.current_chat else "secondary"):
-                    st.session_state.current_chat = cname; st.rerun()
+        
+        all_chats = load_all_chats()
+        for cname in list(all_chats.keys()):
+            if search_term.lower() in cname.lower():
+                col_btn, col_del = st.columns([0.8, 0.2])
+                with col_btn:
+                    dt = all_chats[cname].get("updated", "")
+                    label = f"💬 {cname}\n{dt}" if dt else f"💬 {cname}"
+                    if st.button(label, key=f"b_{cname}", use_container_width=True, type="primary" if cname == st.session_state.get("current_chat") else "secondary"):
+                        st.session_state.current_chat = cname
+                        st.rerun()
+                with col_del:
+                    if st.button("🗑️", key=f"del_{cname}"):
+                        try: os.remove(os.path.join(HISTORY_DIR, f"{cname}.json"))
+                        except: pass
+                        st.rerun()
 
-    st.title(f"🎓 {st.session_state.current_chat}")
-    curr_data = st.session_state.chats.get(st.session_state.current_chat, {"messages": []})
-    msgs = curr_data.get("messages", [])
+    # Zobrazenie správ
+    if "current_chat" not in st.session_state and all_chats:
+        st.session_state.current_chat = list(all_chats.keys())[0]
+    
+    if "current_chat" in st.session_state:
+        st.title(f"🎓 {st.session_state.current_chat}")
+        curr_chat_data = all_chats.get(st.session_state.current_chat, {"messages": []})
+        msgs = curr_chat_data.get("messages", [])
 
-    for m in msgs:
-        with st.chat_message(m["role"]): st.markdown(m["content"])
+        # Súbory pre AI
+        st.write("---")
+        ai_files = st.file_uploader(L['upload'], type=["jpg", "jpeg", "png", "pdf"], accept_multiple_files=True, key="ai_up")
 
-    if prompt := st.chat_input(L['input']):
-        msgs.append({"role": "user", "content": prompt})
-        save_chat(st.session_state.current_chat, msgs)
-        # Tu by išla tvoja AI logika (preskočené pre dĺžku)
-        st.rerun()
+        for m in msgs:
+            with st.chat_message(m["role"]): st.markdown(m["content"])
+
+        if prompt := st.chat_input(L['input']):
+            msgs.append({"role": "user", "content": prompt})
+            save_chat(st.session_state.current_chat, msgs)
+            
+            with st.chat_message("assistant"):
+                with st.status(L['status_think'], expanded=True) as status:
+                    is_new = st.session_state.current_chat.startswith("Chat_") or st.session_state.current_chat == "New Chat"
+                    sys_msg = f"Act as a tutor. Reply in the same language as user. UI is in {st.session_state.lang}."
+                    if is_new and len(msgs) <= 2: sys_msg += " START WITH [TITLE: 2_word_title] THEN reply."
+                    
+                    payload = [sys_msg] + [f"{m['role']}: {m['content']}" for m in msgs[-10:]]
+                    if ai_files:
+                        for f in ai_files: payload.append({'mime_type': f.type, 'data': f.getvalue()})
+
+                    try:
+                        res = genai.GenerativeModel('gemini-flash-latest').generate_content(payload).text
+                        final = res
+                        if "[TITLE:" in res:
+                            parts = res.split("]", 1)
+                            final = parts[1].strip()
+                            new_t = slugify(parts[0].replace("[TITLE:", "").strip())
+                            if new_t and new_t != st.session_state.current_chat:
+                                old_p = os.path.join(HISTORY_DIR, f"{st.session_state.current_chat}.json")
+                                new_p = os.path.join(HISTORY_DIR, f"{new_t}.json"); os.rename(old_p, new_p)
+                                st.session_state.current_chat = new_t
+
+                        status.update(label=L['status_ready'], state="complete", expanded=False)
+                        st.markdown(final)
+                        msgs.append({"role": "assistant", "content": final})
+                        save_chat(st.session_state.current_chat, msgs)
+                        st.rerun()
+                    except Exception as e:
+                        status.update(label=L['error'], state="error")
+                        st.error(str(e)); st.stop()
 
 # ==========================================
-# SEKCIA 2: FÓRUM (S PREKLADOM)
+# SEKCIA 2: VEREJNÉ FÓRUM
 # ==========================================
 with tab_forum:
     st.title(f"{L['forum']}")
+    sel_sub = st.selectbox(L["subject"], SUBJECTS, key="forum_sub")
     
-    selected_subject = st.selectbox(L["subject"], SUBJECTS, key="forum_sub")
+    f_col1, f_col2 = st.columns([0.6, 0.4])
     
-    col1, col2 = st.columns([0.6, 0.4])
-    
-    with col1:
-        st.subheader(f"{L['files']}: {selected_subject}")
-        # Načítanie súborov z priečinka shared_forum
-        all_files = os.listdir(FORUM_DIR)
-        subject_files = [f for f in all_files if f.startswith(selected_subject)]
+    with f_col1:
+        st.subheader(f"{L['files']}: {sel_sub}")
+        all_f = os.listdir(FORUM_DIR)
+        sub_f = [f for f in all_f if f.startswith(sel_sub)]
         
-        if not subject_files:
-            st.info("No files yet.")
+        if not sub_f: st.info("No files.")
         else:
-            for f in subject_files:
-                col_name, col_btn = st.columns([0.7, 0.3])
-                # Vyčistíme názov súboru pre zobrazenie
-                clean_name = f.replace(f"{selected_subject}_", "")
-                with col_name:
-                    st.write(f"📄 {clean_name}")
-                with col_btn:
-                    with open(os.path.join(FORUM_DIR, f), "rb") as file_data:
-                        st.download_button(L["download"], data=file_data, file_name=clean_name, key=f"dl_{f}")
+            for f in sub_f:
+                c1, c2 = st.columns([0.7, 0.3])
+                clean = f.replace(f"{sel_sub}_", "")
+                with c1: st.write(f"📄 {clean}")
+                with c2:
+                    with open(os.path.join(FORUM_DIR, f), "rb") as fd:
+                        st.download_button(L["download"], data=fd, file_name=clean, key=f"dl_{f}")
 
-    with col2:
+    with f_col2:
         st.subheader(L["upload"])
-        f_name = st.text_input("Názov / Title")
-        f_upload = st.file_uploader("PDF/IMG", type=["pdf", "jpg", "png"], key="f_up")
-        
+        fn = st.text_input("Názov / Title", key="fn_in")
+        fu = st.file_uploader("PDF/IMG", type=["pdf", "jpg", "png"], key="fu_in")
         if st.button(L["upload"], use_container_width=True):
-            if f_upload and f_name:
-                save_path = os.path.join(FORUM_DIR, f"{selected_subject}_{slugify(f_name)}_{f_upload.name}")
-                with open(save_path, "wb") as f:
-                    f.write(f_upload.getbuffer())
-                st.success("OK!")
-                st.rerun()
+            if fu and fn:
+                with open(os.path.join(FORUM_DIR, f"{sel_sub}_{slugify(fn)}_{fu.name}"), "wb") as f:
+                    f.write(fu.getbuffer())
+                st.success("OK!"); st.rerun()
 
 # ==========================================
-# SEKCIA 3: SKUPINY
+# SEKCIA 3: MOJE SKUPINY
 # ==========================================
 with tab_groups:
     st.title(L["groups"])
-    st.info("Coming soon...")
+    st.info("Locked. Need Login System.")
