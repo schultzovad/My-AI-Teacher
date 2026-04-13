@@ -6,7 +6,7 @@ import re
 import unicodedata
 from datetime import datetime
 
-# 1. SETUP
+# 1. ZÁKLADNÉ NASTAVENIE
 st.set_page_config(page_title="EduHub Pro", layout="wide", page_icon="🎓", initial_sidebar_state="expanded")
 
 HISTORY_DIR = "chat_history"
@@ -14,7 +14,11 @@ FORUM_DIR = "shared_forum"
 for d in [HISTORY_DIR, FORUM_DIR]:
     if not os.path.exists(d): os.makedirs(d)
 
-# 2. KOMPLETNÝ PREKLADOVÝ SLOVNÍK
+# API kľúč (ak ho máš v Secrets)
+if "GOOGLE_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+
+# 2. KOMPLETNÝ PREKLADOVÝ SLOVNÍK (všetkých 9 jazykov)
 LANG_MAP = {
     "SK": {
         "chat": "💬 AI Tutor", "forum": "🏫 Fórum", "groups": "👥 Skupiny", 
@@ -113,7 +117,9 @@ L = LANG_MAP[st.session_state.lang]
 
 # 3. POMOCNÉ FUNKCIE
 def save_chat(name, msgs):
-    data = {"updated": datetime.now().strftime("%d.%m. %H:%M"), "messages": msgs}
+    # TRIK: Uložíme čistý timestamp (univerzálny čas)
+    timestamp = datetime.now().timestamp()
+    data = {"timestamp": timestamp, "messages": msgs}
     with open(os.path.join(HISTORY_DIR, f"{name}.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
@@ -125,7 +131,7 @@ def load_all_chats():
             with open(os.path.join(HISTORY_DIR, f), "r", encoding="utf-8") as file:
                 content = json.load(file)
                 name = f.replace(".json", "")
-                chats[name] = content if isinstance(content, dict) else {"updated": "", "messages": content}
+                chats[name] = content
         except: continue
     return chats
 
@@ -141,7 +147,6 @@ tabs = st.tabs([L["chat"], L["forum"], L["groups"]])
 # ==========================================
 with tabs[0]:
     with st.sidebar:
-        # OPRAVA: Preložený štítok pre jazyk
         st.selectbox(L["lang_label"], options=list(LANG_MAP.keys()), key="lang")
         L = LANG_MAP[st.session_state.lang] 
         st.title(f"📂 {L['chat']}")
@@ -159,8 +164,11 @@ with tabs[0]:
             if search_term.lower() in cname.lower():
                 col_btn, col_del = st.columns([0.8, 0.2])
                 with col_btn:
-                    dt = all_chats[cname].get("updated", "")
-                    label = f"💬 {cname}\n{dt}" if dt else f"💬 {cname}"
+                    # ZOBRAZENIE ČASU: Prepočet na lokálny čas používateľa
+                    ts = all_chats[cname].get("timestamp")
+                    dt_display = datetime.fromtimestamp(ts).strftime("%d.%m. %H:%M") if ts else ""
+                    
+                    label = f"💬 {cname}\n{dt_display}"
                     if st.button(label, key=f"b_{cname}", use_container_width=True, type="primary" if cname == st.session_state.get("current_chat") else "secondary"):
                         st.session_state.current_chat = cname; st.rerun()
                 with col_del:
@@ -175,7 +183,6 @@ with tabs[0]:
         msgs = curr_chat_data.get("messages", [])
 
         st.write("---")
-        # OPRAVA: Preložený štítok pre nahrávanie v čete
         ai_files = st.file_uploader(L['upload_label'], type=["jpg", "jpeg", "png", "pdf"], accept_multiple_files=True, key="ai_up")
 
         if "auto_prompt" in st.session_state:
@@ -251,9 +258,8 @@ with tabs[1]:
                         save_chat(nid, []); st.session_state.current_chat = nid; st.rerun()
 
     with f_col2:
-        st.subheader(L["upload_btn"]) # OPRAVA: Preložený nadpis sekcie
+        st.subheader(L["upload_btn"]) 
         fn = st.text_input(L["mat_title"], key="fn_in")
-        # OPRAVA: Preložený štítok pre nahrávanie na fóre
         fu = st.file_uploader(L["upload_label"], type=["pdf", "jpg", "png"], key="fu_in")
         if st.button(L["upload_btn"], use_container_width=True):
             if fu and fn:
