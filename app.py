@@ -4,89 +4,92 @@ import google.generativeai as genai
 # 1. NASTAVENIE STRÁNKY
 st.set_page_config(page_title="AI Tutor Chat", layout="centered", page_icon="🎓")
 
-# 2. API KEY SETUP
+# 2. PRIPOJENIE API (Secrets)
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Missing API Key!")
+    st.error("Missing API Key! Please add it to Streamlit Secrets.")
 
-# Zoznam modelov (nechávame tie najstabilnejšie)
-AVAILABLE_MODELS = ['gemini-1.5-flash-latest', 'gemini-2.0-flash']
+# Modely - poradie od najstabilnejšieho po najnovší
+AVAILABLE_MODELS = ['gemini-1.5-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-flash']
 
-# --- PAMÄŤ ČETU (Session State) ---
-# Toto zabezpečí, že správy nezmiznú pri každom kliknutí
+# PAMÄŤ ČETU
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 3. UI - BOČNÝ PANEL PRE SÚBORY
+# 3. BOČNÝ PANEL (Súbory)
 with st.sidebar:
-    st.title("📁 Documents")
+    st.title("📁 Study Materials")
     uploaded_files = st.file_uploader(
-        "Upload notes for the AI context", 
+        "Upload notes (JPG, PNG, PDF)", 
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True
     )
-    if st.button("Clear Chat History"):
+    
+    if uploaded_files:
+        st.info(f"✅ {len(uploaded_files)} file(s) loaded and ready for chat.")
+    
+    st.markdown("---")
+    if st.button("🗑️ Clear Chat"):
         st.session_state.messages = []
         st.rerun()
 
-# 4. HLAVNÁ ČETOVACIA ČASŤ
+# 4. HLAVNÝ ČET
 st.title("💬 AI Tutor Chat")
-st.caption("Ask anything about your notes or just start a conversation.")
 
-# Zobrazenie histórie správ
+# Zobrazenie histórie
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 # VSTUP OD POUŽÍVATEĽA
-if prompt := st.chat_input("What would you like to know?"):
+if prompt := st.chat_input("Ask about your notes..."):
     
-    # 1. Pridáme správu používateľa do histórie a zobrazíme ju
+    # Pridáme správu do histórie
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2. Generovanie odpovede od AI
+    # ODPOVEĎ AI
     with st.chat_message("assistant"):
-        message_placeholder = st.empty()
+        container = st.empty()
         full_response = ""
         
-        # Príprava kontextu (text + súbory)
-        content_to_send = []
+        # Príprava "balíka" pre AI (Text + História + Súbory)
+        payload = []
         
-        # Pridáme inštrukciu pre správanie AI
-        system_instruction = "You are a helpful AI Tutor. Use the uploaded files as context if available. Always respond in the language of the user or the notes."
-        content_to_send.append(system_instruction)
+        # Systémová inštrukcia (aby AI vedela, kto je)
+        payload.append("You are a friendly AI Tutor. Analyze the attached files and the chat history to help the student.")
         
-        # Pridáme históriu (aby AI vedela, o čom sme hovorili predtým)
+        # Pridanie histórie správ
         for m in st.session_state.messages:
-            content_to_send.append(f"{m['role']}: {m['content']}")
+            payload.append(f"{m['role']}: {m['content']}")
 
-        # Pridáme súbory (ak sú nahrané)
+        # PRIDANIE SÚBOROV (Toto zabezpečí, že AI ich uvidí spolu s textom)
         if uploaded_files:
             for f in uploaded_files:
-                content_to_send.append({'mime_type': f.type, 'data': f.getvalue()})
+                payload.append({'mime_type': f.type, 'data': f.getvalue()})
 
-        # Skúšame modely jeden po druhom
         success = False
         for model_name in AVAILABLE_MODELS:
             if success: break
             try:
-                model = genai.GenerativeModel(model_name)
-                response = model.generate_content(content_to_send)
-                full_response = response.text
-                success = True
+                with st.spinner(f'Učiteľ premýšľa...'):
+                    model = genai.GenerativeModel(model_name)
+                    response = model.generate_content(payload)
+                    full_response = response.text
+                    success = True
             except Exception as e:
                 if "429" in str(e):
-                    continue
+                    continue # Skúsi ďalší model v poradí
                 else:
-                    full_response = f"Error with {model_name}: {e}"
+                    full_response = f"Vyskytla sa technická chyba: {e}"
                     break
         
+        # Ak zlyhali všetky modely kvôli limitu
         if not success:
-            full_response = "⚠️ All models are busy. Please wait 30s and try again."
+            st.warning("⚠️ **Príliš veľa študentov sa práve učí!**")
+            full_response = "Naši AI učitelia sú momentálne trošku vyťažení. Prosím, dopraj im krátku, **30-sekundovú prestávku** na kávu a skús mi napísať znova. ☕😊"
 
-        # Zobrazenie odpovede a uloženie do histórie
-        message_placeholder.markdown(full_response)
+        container.markdown(full_response)
         st.session_state.messages.append({"role": "assistant", "content": full_response})
