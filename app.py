@@ -6,12 +6,12 @@ import re
 import unicodedata
 
 # 1. SETUP & MULTILINGUAL DICTIONARY
-# Pridal som initial_sidebar_state="auto", aby sa lišta správala inteligentnejšie
+# Zmenil som "auto" na "collapsed" - lišta bude pri štarte schovaná
 st.set_page_config(
     page_title="AI Tutor Pro", 
     layout="wide", 
     page_icon="🎓",
-    initial_sidebar_state="auto" 
+    initial_sidebar_state="collapsed" 
 )
 
 LANG_MAP = {
