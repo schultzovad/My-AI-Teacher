@@ -8,58 +8,48 @@ st.set_page_config(page_title="AI Tutor", layout="centered")
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Missing API Key! Please add it to Streamlit Secrets.")
+    st.error("Missing API Key in Streamlit Secrets!")
 
-# --- ZMENA TU: Skúšame najstabilnejšie volanie modelu ---
+# Tu používame najnovšie stabilné označenie
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 # 3. APP INTERFACE
 st.title("📚 AI Tutor")
-st.subheader("Turn your notes into clear explanations!")
+st.subheader("Upload your notes and let's study!")
 
-uploaded_file = st.file_uploader("Upload your notes (JPG, PNG, PDF)", type=["jpg", "jpeg", "png", "pdf"])
+uploaded_file = st.file_uploader("Upload notes (JPG, PNG, PDF)", type=["jpg", "jpeg", "png", "pdf"])
 
 if uploaded_file is not None:
-    st.success("File uploaded successfully!")
+    st.success("File ready!")
     
     if st.button('✨ Explain these notes'):
         file_data = uploaded_file.getvalue()
         file_type = uploaded_file.type
         
         prompt = """
-        You are a friendly and expert teacher. 
-        Analyze the provided document and follow these steps:
-        1. Give a brief summary of the topic.
-        2. Explain the main concepts or formulas in a simple way.
-        3. Provide a real-world example to help me understand better.
-        4. End with 3 quick review questions.
+        You are a friendly teacher. Analyze this document and:
+        1. Summarize the topic.
+        2. Explain main concepts simply.
+        3. Give a real-life example.
+        4. Provide 3 review questions.
         
-        IMPORTANT: Your response MUST be in the same language as the notes in the file.
-        Use clean Markdown formatting, bullet points, and bold text.
+        IMPORTANT: Use the same language as the notes.
+        Format with bullet points and bold text.
         """
         
-        with st.spinner('Analyzing...'):
+        with st.spinner('Thinking...'):
             try:
-                # Skúsime vygenerovať obsah
+                # V novej verzii knižnice toto musí prejsť
                 response = model.generate_content([
                     prompt,
                     {'mime_type': file_type, 'data': file_data}
                 ])
-                
-                st.success("Analysis complete!")
                 st.markdown("---")
                 st.markdown(response.text)
                 
             except Exception as e:
-                # AK TO ZNOVA PADNE, skúsime automaticky záložný model
-                st.warning("Primary model failed, trying backup model...")
-                try:
-                    backup_model = genai.GenerativeModel('gemini-pro-vision')
-                    response = backup_model.generate_content([prompt, {'mime_type': file_type, 'data': file_data}])
-                    st.markdown(response.text)
-                except Exception as e2:
-                    st.error(f"Even backup failed. Error: {e2}")
-                    st.info("Check if Gemini API is enabled in your Google AI Studio at https://aistudio.google.com/")
+                st.error(f"Error detail: {e}")
+                st.info("If you see 404, please wait 1 minute for the requirements.txt update to take effect.")
 
 st.markdown("---")
-st.caption("Powered by Gemini AI 🎓")
+st.caption("AI Tutor Project 🎓")
