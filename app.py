@@ -1,92 +1,112 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 1. SETUP
-st.set_page_config(page_title="AI Tutor", layout="centered", page_icon="🎓")
+# 1. ZÁKLADNÉ NASTAVENIE
+st.set_page_config(page_title="AI Tutor Pro", layout="centered", page_icon="🎓")
 
+# 2. PRIPOJENIE API KĽÚČA
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Missing API Key!")
+    st.error("Missing API Key! Please add it to Streamlit Secrets.")
 
-# Skúsime na prvé miesto stabilnejší model
-AVAILABLE_MODELS = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-2.0-flash']
+# ZOZNAM MODELOV (Presne podľa tvojho zoznamu, ktorý funguje)
+AVAILABLE_MODELS = [
+    'gemini-flash-latest',       # Stabilná verzia 1.5
+    'gemini-2.0-flash',          # Verzia 2.0
+    'gemini-pro-latest'          # Stabilná Pro verzia
+]
 
+# PAMÄŤ ČETU (Session State)
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 2. UI
+# 3. DIZAJN APLIKÁCIE
 st.title("🎓 AI Tutor")
+st.markdown("Upload your notes or ask a quick question.")
 
-# Nahrávanie súborov + tlačidlo na analýzu
-with st.expander("📁 Upload notes / photos", expanded=True):
+# Hlavná sekcia pre nahrávanie súborov s tlačidlom
+with st.container():
     uploaded_files = st.file_uploader(
-        "Attach images or PDFs", 
+        "Attach notes (JPG, PNG, PDF)", 
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True,
         label_visibility="collapsed"
     )
-    analyze_button = st.button("✨ Analyze Files")
+    # Tlačidlo pre analýzu samotných súborov bez nutnosti písať text
+    analyze_files_clicked = st.button("✨ Analyze Uploaded Files")
 
-# Zobrazenie histórie
+st.markdown("---")
+
+# Zobrazenie histórie správ
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 3. LOGIKA (Spracovanie vstupu)
-input_prompt = st.chat_input("Ask a question...")
+# 4. LOGIKA SPRACOVANIA VSTUPU
+user_input = st.chat_input("Type your question here...")
 
-# Ak užívateľ klikol na tlačidlo ANALYZE alebo napísal text
-if analyze_button or input_prompt:
+# Kontrola, či niečo prišlo (buď cez tlačidlo alebo cez čet)
+if analyze_files_clicked or user_input:
     
-    # Určíme, čo je textový vstup
-    current_user_text = input_prompt if input_prompt else "Analyze these files, please."
+    # Ak klikne na tlačidlo bez textu, nastavíme predvolenú otázku
+    final_text = user_input if user_input else "Please analyze the uploaded files and summarize the main points."
     
-    # Pridáme do histórie
-    st.session_state.messages.append({"role": "user", "content": current_user_text})
+    # Pridáme správu do histórie
+    st.session_state.messages.append({"role": "user", "content": final_text})
     with st.chat_message("user"):
-        st.markdown(current_user_text)
+        st.markdown(final_text)
 
     with st.chat_message("assistant"):
-        container = st.empty()
+        response_placeholder = st.empty()
+        
+        # Príprava dát pre AI
         payload = []
+        payload.append("You are a friendly AI Tutor. Use the chat history and any uploaded files for context.")
         
-        # Inštrukcie
-        payload.append("You are a friendly AI Tutor. Analyze files if provided. Answer questions clearly in the language of the notes.")
-        
-        # História (posledných 5 správ, aby sme nepreťažili limit)
+        # Pridanie histórie (posledných 6 správ pre stabilitu)
         for m in st.session_state.messages[-6:]:
             payload.append(f"{m['role']}: {m['content']}")
 
-        # Súbory
+        # Pridanie súborov (ak sú prítomné)
         if uploaded_files:
             for f in uploaded_files:
                 payload.append({'mime_type': f.type, 'data': f.getvalue()})
 
         success = False
+        error_msg = ""
+        
+        # Skúšame dostupné modely
         for model_name in AVAILABLE_MODELS:
             if success: break
             try:
-                with st.spinner('Thinking...'):
+                with st.spinner('AI faculty is thinking...'):
                     model = genai.GenerativeModel(model_name)
                     response = model.generate_content(payload)
-                    full_response = response.text
+                    full_text = response.text
                     success = True
             except Exception as e:
-                if "429" in str(e):
-                    continue
+                error_msg = str(e)
+                if "429" in error_msg:
+                    continue # Skúsi ďalší model kvôli limitu
                 else:
-                    st.error(f"Technical glitch: {e}")
-                    break
-        
-        if not success:
-            st.warning("⚠️ **Too many students are studying right now!**")
-            full_response = "Our AI teachers are taking a 30-second coffee break. Please try again in a moment! ☕😊"
+                    # Ak je to iná technická chyba (napr. 404), vypíšeme ju a skúsime ďalší
+                    continue
 
-        container.markdown(full_response)
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+        if success:
+            response_placeholder.markdown(full_text)
+            st.session_state.messages.append({"role": "assistant", "content": full_text})
+        else:
+            # Ak zlyhalo úplne všetko
+            if "429" in error_msg:
+                st.warning("⚠️ **Too many students are studying right now!**")
+                response_placeholder.markdown("Our AI teachers are taking a 30-second coffee break. Please wait a moment and try again! ☕😊")
+            else:
+                st.error(f"Technical glitch: {error_msg}")
 
+# Bočný panel pre čistenie četu
 with st.sidebar:
-    if st.button("🗑️ Clear Conversation"):
+    st.title("Settings")
+    if st.button("🗑️ Clear Chat History"):
         st.session_state.messages = []
         st.rerun()
