@@ -12,7 +12,7 @@ else:
     st.error("Missing API Key! Please add it to Streamlit Secrets.")
 
 # Initialize the model
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('models/gemini-1.5-flash')
 
 # 3. APP INTERFACE
 st.title("📚 AI Tutor")
