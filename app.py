@@ -14,35 +14,42 @@ AVAILABLE_MODELS = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-pro-lates
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 2. HISTÓRIA ČETU
+# 2. TITULOK A HISTÓRIA ČETU (Vypíše sa ako prvá)
 st.title("🎓 Tvoj osobný AI učiteľ")
-st.caption("Nahraj fotku poznámok alebo sa čokoľvek opýtaj. Vysvetlím ti to polopatě!")
+st.caption("Nahraj fotku a pýtaj sa. Som tu, aby som ti pomohol všetko pochopiť! 😊")
 
+# Vypísanie všetkých správ, ktoré už v čete sú
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-st.write("---")
+# 3. SPODNÁ ČASŤ - TU JE ZMENA (Nahrávač je až pod históriou)
+st.write("---") 
 
-# 3. SPODNÝ PANEL (Vždy viditeľný pri písaní)
+# Tento kontajner zabezpečí, že nahrávač bude vždy na konci
 with st.container():
     uploaded_files = st.file_uploader(
-        "Prilož poznámky alebo fotku príkladu", 
+        "Prilož poznámky alebo fotku", 
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="file_uploader_bottom" # Unikátny kľúč pre stabilitu
     )
 
-if prompt := st.chat_input("Opýtaj sa na čokoľvek..."):
-    process_input = True
-elif uploaded_files and st.button("✨ Vysvetli mi nahrané súbory"):
-    process_input = True
-    prompt = "Prosím, vysvetli mi tieto poznámky ako učiteľ a ak sú tam príklady, vyrieš ich."
-else:
-    process_input = False
+# 4. LOGIKA VSTUPU
+input_text = st.chat_input("Opýtaj sa na čokoľvek...")
 
-# 4. LOGIKA UČITEĽA
-if process_input:
+# Tlačidlo sa ukáže len ak sú nahrané súbory
+analyze_clicked = False
+if uploaded_files:
+    if st.button("✨ Vysvetli mi nahrané súbory"):
+        analyze_clicked = True
+
+if input_text or analyze_clicked:
+    # Určenie textu
+    prompt = input_text if input_text else "Prosím, vysvetli mi tieto súbory ako učiteľ."
+    
+    # Pridanie do histórie
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -51,24 +58,17 @@ if process_input:
         container = st.empty()
         payload = []
         
-        # OSOBNOSŤ UČITEĽA: Milý, ľudský, ale odborný
         teacher_prompt = """
-        Si skúsený, milý a trpezlivý učiteľ v škole. Tvojou úlohou nie je robiť 'analýzu', ale 'vysvetľovať' učivo.
-        
-        PRAVIDLÁ:
-        1. Buď povzbudivý a používaj milý tón (napr. 'Pozrime sa na to spolu', 'To je skvelá otázka').
-        2. Ak sú na fotkách príklady, najprv ich vypočítaj krok po kroku a potom jemne vysvetli logiku.
-        3. Ak sú tam poznámky, vysvetli ich jednoducho a zrozumiteľne, ako keby si doučoval obľúbeného žiaka.
-        4. NIKDY nemeň správnosť faktov. Odbornosť musí byť 100%.
-        5. Odpovedaj v jazyku, ktorý používa žiak (slovenčina).
+        Si skúsený, milý a trpezlivý učiteľ. 
+        Tvojou úlohou je vysvetľovať učivo ľudsky a zrozumiteľne.
+        Ak sú na fotkách príklady, vyrieš ich krok po kroku.
+        Buď povzbudivý, ale 100% odborne správny.
         """
         payload.append(teacher_prompt)
         
-        # Pridanie histórie pre kontext
         for m in st.session_state.messages[-6:]:
             payload.append(f"{m['role']}: {m['content']}")
 
-        # Pridanie súborov
         if uploaded_files:
             for f in uploaded_files:
                 payload.append({'mime_type': f.type, 'data': f.getvalue()})
@@ -85,15 +85,18 @@ if process_input:
             except Exception as e:
                 if "429" in str(e): continue
                 else:
-                    st.error(f"Technická chybička: {e}")
+                    st.error(f"Chyba: {e}")
                     break
         
         if not success:
-            st.warning("⚠️ Naši učitelia majú práve krátku prestávku na kávu.")
-            full_response = "Prepáč, trošku som sa zamotal v limitoch. Skús mi túto otázku poslať ešte raz o 30 sekúnd, budem pripravený! 😊☕"
+            st.warning("⚠️ Prestávka na kávu. Skús o 30 sekúnd.")
+            full_response = "Daj mi prosím chvíľku, o 30 sekúnd budem opäť pri tebe! ☕😊"
 
         container.markdown(full_response)
         st.session_state.messages.append({"role": "assistant", "content": full_response})
+        
+        # Po odoslaní môžeme stránku refreshnúť, aby sa vyčistil nahrávač
+        # st.rerun() 
 
 with st.sidebar:
     if st.button("🗑️ Nová téma (Vymazať čet)"):
