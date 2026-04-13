@@ -9,59 +9,59 @@ if "GOOGLE_API_KEY" in st.secrets:
 else:
     st.error("Missing API Key!")
 
-AVAILABLE_MODELS = ['gemini-1.5-flash-latest', 'gemini-2.0-flash']
+# Skúsime na prvé miesto stabilnejší model
+AVAILABLE_MODELS = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-2.0-flash']
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 2. UI - HLAVNÁ ČASŤ
+# 2. UI
 st.title("🎓 AI Tutor")
-st.markdown("Upload notes or just ask a question. I'm here to help!")
 
-# Nahrávanie súborov PRIAMO v hlavnom okne
-with st.container():
+# Nahrávanie súborov + tlačidlo na analýzu
+with st.expander("📁 Upload notes / photos", expanded=True):
     uploaded_files = st.file_uploader(
-        "Attach notes (JPG, PNG, PDF)", 
+        "Attach images or PDFs", 
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True,
-        label_visibility="collapsed" # Schováme label, aby to bolo čistejšie
+        label_visibility="collapsed"
     )
+    analyze_button = st.button("✨ Analyze Files")
 
-# Zobrazenie histórie četu
+# Zobrazenie histórie
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 3. LOGIKA ODOSIELANIA
-if prompt := st.chat_input("Ask something or send files..."):
+# 3. LOGIKA (Spracovanie vstupu)
+input_prompt = st.chat_input("Ask a question...")
+
+# Ak užívateľ klikol na tlačidlo ANALYZE alebo napísal text
+if analyze_button or input_prompt:
     
-    # Pridáme správu do histórie (aj keď je to len info o súboroch)
-    user_content = prompt if prompt else "Analysis of uploaded files"
-    st.session_state.messages.append({"role": "user", "content": user_content})
+    # Určíme, čo je textový vstup
+    current_user_text = input_prompt if input_prompt else "Analyze these files, please."
     
+    # Pridáme do histórie
+    st.session_state.messages.append({"role": "user", "content": current_user_text})
     with st.chat_message("user"):
-        st.markdown(user_content)
+        st.markdown(current_user_text)
 
     with st.chat_message("assistant"):
         container = st.empty()
         payload = []
         
-        # Inštrukcia pre AI
-        system_msg = "You are a friendly AI Tutor. If the user sends files, analyze them. If they ask a question, answer it. Always use the language of the notes/user."
-        payload.append(system_msg)
+        # Inštrukcie
+        payload.append("You are a friendly AI Tutor. Analyze files if provided. Answer questions clearly in the language of the notes.")
         
-        # Pridanie histórie
-        for m in st.session_state.messages:
+        # História (posledných 5 správ, aby sme nepreťažili limit)
+        for m in st.session_state.messages[-6:]:
             payload.append(f"{m['role']}: {m['content']}")
 
-        # Pridanie súborov k TEJTO konkrétnej správe
+        # Súbory
         if uploaded_files:
             for f in uploaded_files:
                 payload.append({'mime_type': f.type, 'data': f.getvalue()})
-        
-        # Ak nie je text ani súbor, nič nerobíme
-        if not prompt and not uploaded_files:
-            st.stop()
 
         success = False
         for model_name in AVAILABLE_MODELS:
@@ -76,7 +76,7 @@ if prompt := st.chat_input("Ask something or send files..."):
                 if "429" in str(e):
                     continue
                 else:
-                    full_response = f"Technical glitch: {e}"
+                    st.error(f"Technical glitch: {e}")
                     break
         
         if not success:
@@ -86,7 +86,6 @@ if prompt := st.chat_input("Ask something or send files..."):
         container.markdown(full_response)
         st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# Tlačidlo na vymazanie četu v bočnej lište (nech nezavadzia v hlavnom okne)
 with st.sidebar:
     if st.button("🗑️ Clear Conversation"):
         st.session_state.messages = []
