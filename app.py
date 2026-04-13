@@ -6,7 +6,13 @@ import re
 import unicodedata
 
 # 1. SETUP & MULTILINGUAL DICTIONARY
-st.set_page_config(page_title="AI Tutor Pro", layout="wide", page_icon="🎓")
+# Pridal som initial_sidebar_state="auto", aby sa lišta správala inteligentnejšie
+st.set_page_config(
+    page_title="AI Tutor Pro", 
+    layout="wide", 
+    page_icon="🎓",
+    initial_sidebar_state="auto" 
+)
 
 LANG_MAP = {
     "SK": {"title": "Konverzácie", "new_chat": "➕ Nový čet", "rename": "Premenovať:", "upload": "Nahrať poznámky", "explain": "✨ Vysvetli súbory", "input": "Opýtaj sa...", "status_think": "Učiteľ premýšľa...", "status_ready": "Hotovo!", "limit_label": "Limit dosiahnutý", "safety_label": "Bezpečnostný filter", "error_label": "Chyba", "limit_msg": "😊 **Môj AI mozog si potrebuje oddýchnuť.** Limit 20 správ bol dosiahnutý. Vidíme sa zajtra?", "safety_msg": "⚠️ **O tomto nemôžem hovoriť.** Pravidlá mi to nedovoľujú.", "error_msg": "🔌 **Technická chyba.** Skús to znova.", "rename_btn": "Uložiť"},
@@ -56,7 +62,7 @@ if "current_chat" not in st.session_state or st.session_state.current_chat not i
 # --- SIDEBAR ---
 with st.sidebar:
     st.selectbox("🌐 Language / Jazyk", options=list(LANG_MAP.keys()), key="lang")
-    L = LANG_MAP[st.session_state.lang] # Refresh L immediately
+    L = LANG_MAP[st.session_state.lang] 
     st.title(f"📂 {L['title']}")
     
     if st.button(L['new_chat'], use_container_width=True):
@@ -133,7 +139,6 @@ if messages and messages[-1]["role"] == "user":
                 save_chat(st.session_state.current_chat, st.session_state.chats[st.session_state.current_chat])
                 st.rerun()
             except Exception as e:
-                # TU SÚ OPRAVENÉ PREKLADY KOLÓNIEK
                 if "429" in str(e):
                     status.update(label=L['limit_label'], state="error")
                     st.warning(L['limit_msg'])
