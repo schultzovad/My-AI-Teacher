@@ -6,10 +6,9 @@ import re
 import unicodedata
 
 # 1. SETUP & MULTILINGUAL DICTIONARY
-# Nastavujeme "expanded", aby bola lišta súčasťou plochy a neprekrývala ju (na širokých obrazovkách)
 st.set_page_config(
     page_title="AI Tutor Pro", 
-    layout="wide", 
+    layout="wide", # Toto povoľuje široké zobrazenie
     page_icon="🎓",
     initial_sidebar_state="expanded" 
 )
@@ -23,7 +22,7 @@ LANG_MAP = {
     "IT": {"title": "Conversazioni", "new_chat": "➕ Nuova chat", "rename": "Rinomina:", "upload": "Note", "explain": "✨ Spiega", "input": "Chiedi...", "status_think": "Pensando...", "status_ready": "Pronto!", "limit_label": "Limite raggiunto", "safety_label": "Filtro di sicurezza", "error_label": "Errore", "limit_msg": "😊 **Pausa necessaria.** Limite raggiunto. A domani?", "safety_msg": "⚠️ **Vietato.** Le mie regole non lo consentono.", "error_msg": "🔌 **Errore.** Riprova.", "rename_btn": "Salva"},
     "PL": {"title": "Rozmowy", "new_chat": "➕ Nowy czat", "rename": "Zmień nazwę:", "upload": "Notatki", "explain": "✨ Wyjaśnij", "input": "Zapytaj...", "status_think": "Myślenie...", "status_ready": "Gotowe!", "limit_label": "Limit osiągnięty", "safety_label": "Filtr bezpieczeństwa", "error_label": "Błąd", "limit_msg": "😊 **Odpoczynek.** Limit osiągnięty. Do jutra?", "safety_msg": "⚠️ **Nie wolno.** Moje zasady na to nie pozwalają.", "error_msg": "🔌 **Błąd.** Spróbuj ponownie.", "rename_btn": "Zapisz"},
     "UA": {"title": "Розмови", "new_chat": "➕ Новий чат", "rename": "Назва:", "upload": "Нотатки", "explain": "✨ Поясни", "input": "Запитай...", "status_think": "Думаю...", "status_ready": "Готово!", "limit_label": "Ліміт!", "safety_label": "Безпека", "error_label": "Помилка", "limit_msg": "😊 **Треба відпочити.** Ліміт вичерпано. До завтра?", "safety_msg": "⚠️ **Недопустимо.** Мої правила забороняють це.", "error_msg": "🔌 **Помилка.** Спробуйте ще раз.", "rename_btn": "Зберегти"},
-    "CZ": {"title": "Konverzace", "new_chat": "➕ Nový chat", "rename": "Přejmenovat:", "upload": "Poznámky", "explain": "✨ Vysvětli", "input": "Zeptej se...", "status_think": "Přemýšlím...", "status_ready": "Hotovo!", "limit_label": "Limit!", "safety_label": "Filtr", "error_label": "Chyba", "limit_msg": "😊 **Potřebuji pauzu.** Limit vyčerpán. Uvidíme se zítra?", "safety_msg": "⚠️ **Zakázané téma.** Pravidla mi to nedovolují.", "error_msg": "🔌 **Chyba.** Zkus to znovu.", "rename_btn": "Uložit"}
+    "CZ": {"title": "Konverzace", "new_chat": "➕ Nový chat", "rename": "Přejmenovat:", "upload": "Poznámky", "explain": "✨ Vysvětli", "input": "Zepáte se...", "status_think": "Přemýšlím...", "status_ready": "Hotovo!", "limit_label": "Limit!", "safety_label": "Filtr", "error_label": "Chyba", "limit_msg": "😊 **Potřebuji pauzu.** Limit vyčerpán. Uvidíme se zítra?", "safety_msg": "⚠️ **Zakázané téma.** Pravidla mi to nedovolují.", "error_msg": "🔌 **Chyba.** Zkus to znovu.", "rename_btn": "Uložit"}
 }
 
 if "lang" not in st.session_state: st.session_state.lang = "SK"
@@ -149,4 +148,3 @@ if messages and messages[-1]["role"] == "user":
                     status.update(label=L['error_label'], state="error")
                     st.error(L['error_msg'])
                 st.stop()
-                
