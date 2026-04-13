@@ -7,74 +7,78 @@ st.set_page_config(page_title="AI Tutor", layout="centered", page_icon="🎓")
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Chýba API kľúč!")
+    st.error("Missing API Key in Secrets!")
 
+# Stable model names
 AVAILABLE_MODELS = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-pro-latest']
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 2. TITULOK A HISTÓRIA ČETU
-st.title("🎓 Tvoj osobný AI učiteľ")
+# 2. HEADER AND CHAT HISTORY
+st.title("🎓 Your Personal AI Tutor")
+st.caption("Upload your notes and ask anything. I'm here to help you understand! 😊")
 
-# Vypísanie histórie (toto bude rásť a posúvať všetko pod sebou nižšie)
+# Displaying chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 3. MIESTO PRE NOVÚ ODPOVEĎ (keď práve AI píše)
-placeholder_for_new_response = st.container()
-
 st.write("---")
 
-# 4. NAHRÁVAČ SÚBOROV (Teraz je až pod históriou)
+# 3. FILE UPLOADER (Positioned at the bottom, above chat input)
 with st.container():
     uploaded_files = st.file_uploader(
-        "Prilož poznámky alebo fotku", 
+        "Attach notes or photos", 
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True,
         label_visibility="collapsed",
         key="file_uploader_fixed"
     )
     
-    # Tlačidlo "Vysvetli" hneď pod nahrávačom
+    # "Explain" button - only appears if files are uploaded
     analyze_clicked = False
     if uploaded_files:
-        if st.button("✨ Vysvetli mi nahrané súbory"):
+        if st.button("✨ Explain my uploaded files"):
             analyze_clicked = True
 
-# 5. ČETOVACIE POLE (Úplne naspodu)
-input_text = st.chat_input("Opýtaj sa na čokoľvek...")
+# 4. CHAT INPUT (At the very bottom)
+input_text = st.chat_input("Ask a question...")
 
-# 6. LOGIKA SPRACOVANIA
+# 5. PROCESSING LOGIC
 if input_text or analyze_clicked:
-    prompt = input_text if input_text else "Prosím, vysvetli mi tieto súbory ako učiteľ."
+    # Set the prompt text
+    prompt = input_text if input_text else "Please explain these files like a teacher and solve any problems you see."
     
-    # Pridáme do histórie a hneď zobrazíme
+    # Add to history and rerun to move the UI elements
     st.session_state.messages.append({"role": "user", "content": prompt})
-    # Musíme urobiť rerun, aby sa nahrávač posunul pod novú správu
-    # Alebo to môžeme zobraziť manuálne:
     st.rerun()
 
-# Táto časť sa spustí po rerun-e, ak posledná správa je od užívateľa
+# This part runs after rerun if the last message is from the user
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     with st.chat_message("assistant"):
         container = st.empty()
         payload = []
         
+        # SYSTEM INSTRUCTION (The "Personality")
         teacher_prompt = """
-        Si skúsený, milý a trpezlivý učiteľ. 
-        Tvojou úlohou je vysvetľovať učivo ľudsky a zrozumiteľne.
-        Ak sú na fotkách príklady, vyrieš ich krok po kroku.
-        Buď povzbudivý, ale 100% odborne správny.
+        You are an experienced, kind, and patient teacher. 
+        Your task is to explain study materials clearly and humanly.
+        
+        CRITICAL RULES:
+        1. If there are math problems or exercises in the images, solve them step-by-step first.
+        2. Be encouraging and helpful.
+        3. 100% factual accuracy is required.
+        4. IMPORTANT: Always respond in the SAME LANGUAGE as the user's question or the language of the uploaded notes. 
+           If the notes are in Slovak, explain them in Slovak. If the notes are in English, explain in English.
         """
         payload.append(teacher_prompt)
         
-        # Posledné správy pre kontext
+        # Add context (last 6 messages)
         for m in st.session_state.messages[-6:]:
             payload.append(f"{m['role']}: {m['content']}")
 
-        # Súbory (ak sú prítomné v nahrávači)
+        # Add files from the uploader
         if uploaded_files:
             for f in uploaded_files:
                 payload.append({'mime_type': f.type, 'data': f.getvalue()})
@@ -84,7 +88,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
         for model_name in AVAILABLE_MODELS:
             if success: break
             try:
-                with st.spinner('Učiteľ premýšľa...'):
+                with st.spinner('Teacher is thinking...'):
                     model = genai.GenerativeModel(model_name)
                     response = model.generate_content(payload)
                     full_response = response.text
@@ -94,14 +98,16 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                 else: break
         
         if not success:
-            full_response = "Daj mi prosím 30 sekúnd, pauza na kávu! ☕😊"
+            full_response = "I'm sorry, I need a 30-second coffee break. Please try again in a moment! ☕😊"
 
         container.markdown(full_response)
         st.session_state.messages.append({"role": "assistant", "content": full_response})
-        # Opätovný rerun, aby sa nahrávač a chat_input vykreslili pod novou odpoveďou
+        # Rerun again to place the uploader and input field below the new response
         st.rerun()
 
+# Sidebar for settings
 with st.sidebar:
-    if st.button("🗑️ Nová téma"):
+    st.title("Settings")
+    if st.button("🗑️ Clear Chat / New Topic"):
         st.session_state.messages = []
         st.rerun()
