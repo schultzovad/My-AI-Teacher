@@ -1,100 +1,103 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 1. NASTAVENIE STRÁNKY
-st.set_page_config(page_title="AI Tutor Pro", layout="centered")
+# 1. ZÁKLADNÉ NASTAVENIE STRÁNKY
+st.set_page_config(page_title="AI Tutor Pro", layout="centered", page_icon="🎓")
 
-# 2. NASTAVENIE API KĽÚČA
+# 2. PRIPOJENIE API KĽÚČA
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
     st.error("Missing API Key! Please add it to Streamlit Secrets.")
 
-# ZOZNAM MODELOV NA PREPÍNANIE (od najnovšieho po najstabilnejší)
-# Ak jeden model zahlási chybu 429, kód automaticky skúsi ďalší
+# ZOZNAM MODELOV - zoradené od najvyššej kvóty po najnovšie preview
 AVAILABLE_MODELS = [
-    'gemini-2.5-flash', 
-    'gemini-2.0-flash', 
-    'gemini-1.5-flash-latest'
+    'gemini-1.5-flash-latest', 
+    'gemini-1.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.5-flash'
 ]
 
 # 3. DIZAJN APLIKÁCIE
 st.title("📚 AI Tutor Pro")
-st.subheader("Multi-file Support & Smart Learning")
+st.markdown("Upload your notes and get instant explanations. Our AI supports images and PDFs!")
 
-# Nahrávanie súborov
+# Nahrávanie viacerých súborov naraz
 uploaded_files = st.file_uploader(
-    "Upload your notes (JPG, PNG, PDF)", 
+    "Choose your notes (JPG, PNG, PDF)", 
     type=["jpg", "jpeg", "png", "pdf"],
     accept_multiple_files=True
 )
 
-# Textové pole pre otázky
+# Priestor pre vlastné otázky
 user_question = st.text_area(
     "What should I focus on?", 
-    placeholder="e.g., Explain the formulas or create a short summary..."
+    placeholder="e.g., Explain the chemical reactions or summarize the main dates in history..."
 )
 
 if uploaded_files:
     if st.button('✨ Start Analysis'):
-        # Príprava obsahu pre AI
+        # Príprava podkladov pre AI
         content_to_send = []
         
-        # Základný prompt
-        prompt = """
+        # Inštrukcia pre AI (Prompt)
+        base_prompt = """
         You are a friendly and expert teacher. Analyze all the provided documents together.
-        1. Summarize the main topics across all files.
-        2. Explain the key concepts and formulas simply.
-        3. Provide real-life examples.
-        4. End with 3 quick review questions.
+        1. Summarize the main topics clearly.
+        2. Explain the key concepts and formulas in a simple way.
+        3. Provide a practical real-life example.
+        4. End with 3 quick review questions to test my knowledge.
         
         IMPORTANT: Your response MUST be in the same language as the notes in the files.
+        Use clean Markdown formatting, bullet points, and bold text.
         """
         
         if user_question:
-            prompt += f"\n\nUSER'S SPECIFIC REQUEST: {user_question}"
-        
-        content_to_send.append(prompt)
+            full_prompt = f"{base_prompt}\n\nUSER'S SPECIFIC REQUEST: {user_question}"
+        else:
+            full_prompt = base_prompt
+            
+        content_to_send.append(full_prompt)
 
-        # Pridanie všetkých nahraných súborov
+        # Spracovanie nahraných súborov do formátu pre Gemini
         for f in uploaded_files:
             content_to_send.append({'mime_type': f.type, 'data': f.getvalue()})
 
-        # --- LOGIKA PREPÍNANIA MODELOV S PEKNOU HLÁŠKOU ---
+        # --- LOGIKA PREPÍNANIA MODELOV ---
         success = False
         
         for model_name in AVAILABLE_MODELS:
             if success: 
-                break # Ak už máme odpoveď, nepokračujeme
+                break
             
             try:
-                with st.spinner(f'Consulting our AI faculty...'):
+                # Tu nepoužívame spinner s názvom modelu, aby to používateľa neplietlo
+                with st.spinner('Our AI faculty is reviewing your notes...'):
                     model = genai.GenerativeModel(model_name)
                     response = model.generate_content(content_to_send)
                     
-                    # Ak sme sa dostali sem, všetko prebehlo v poriadku
-                    st.success(f"Analysis complete!")
+                    st.success("Analysis complete!")
                     st.markdown("---")
                     st.markdown(response.text)
                     success = True
             except Exception as e:
-                # Ak je to chyba preťaženia (429), skúsime ďalší model v zozname
+                # Ak je to chyba limitu (429), skúšame ďalší model v zozname
                 if "429" in str(e):
                     continue 
                 else:
-                    # Ak je to iná chyba, vypíšeme ju pre tvoju informáciu
-                    st.error(f"Technical glitch with {model_name}: {e}")
+                    # Iné technické chyby vypíšeme
+                    st.error(f"Technical issue: {e}")
                     break
 
-        # AK ZLYHALI ÚPLNE VŠETKY MODELY (Všetky sú preťažené)
+        # FINÁLNA HLÁŠKA PRI PREŤAŽENÍ
         if not success:
             st.warning("⚠️ **Too many students are studying right now!**")
             st.info("""
-                Our AI teachers are a bit overwhelmed by the interest. 
-                Please give them a short **30-second break** to catch their breath and then try clicking the button again. 
-                Thank you for your patience! 😊
+                Our AI teachers are a bit overwhelmed. 
+                Please wait about **30 to 60 seconds** for the limits to reset and then try clicking the button again. 
+                Even AI needs a small coffee break! 😊
             """)
 
 # Pätička
 st.markdown("---")
-st.caption("Powered by Gemini Multi-Model Engine | Designed for your success 🎓")
+st.caption("AI Tutor Pro | Powered by Gemini Multi-Model Engine 🎓")
