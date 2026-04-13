@@ -2,82 +2,70 @@ import streamlit as st
 import google.generativeai as genai
 
 # 1. SETUP
-st.set_page_config(page_title="AI Tutor Pro", layout="centered", page_icon="🎓")
+st.set_page_config(page_title="AI Tutor", layout="centered", page_icon="🎓")
 
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("Chýba API kľúč v Secrets!")
+    st.error("Chýba API kľúč!")
 
 AVAILABLE_MODELS = ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-pro-latest']
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 2. ZOBRAZENIE HISTÓRIE ČETU (Hore)
-st.title("🎓 AI Tutor")
-st.caption("Nahraj súbory a pýtaj sa, alebo len pošli fotku príkladov.")
+# 2. HISTÓRIA ČETU
+st.title("🎓 Tvoj osobný AI učiteľ")
+st.caption("Nahraj fotku poznámok alebo sa čokoľvek opýtaj. Vysvetlím ti to polopatě!")
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 3. SPODNÁ ČASŤ - NAHRÁVANIE A TEXT (Dole pod četom)
-st.write("---") # Oddelovacia čiara
+st.write("---")
 
-# Kontajner pre nahrávanie súborov - bude sa posúvať s četom
+# 3. SPODNÝ PANEL (Vždy viditeľný pri písaní)
 with st.container():
     uploaded_files = st.file_uploader(
-        "Prilož súbory (fotky, PDF)", 
+        "Prilož poznámky alebo fotku príkladu", 
         type=["jpg", "jpeg", "png", "pdf"],
         accept_multiple_files=True,
         label_visibility="collapsed"
     )
 
-# Četové pole
-if prompt := st.chat_input("Napíš správu..."):
-    # Spracovanie, ak máme text alebo súbory
+if prompt := st.chat_input("Opýtaj sa na čokoľvek..."):
     process_input = True
-elif uploaded_files and not st.session_state.get('last_uploaded') == uploaded_files:
-    # Ak sú nahrané nové súbory, ale nie je text, môžeme pridať tlačidlo alebo 
-    # v tomto prípade použijeme fintu - ak užívateľ stlačí Enter v prázdnom poli
-    process_input = False 
+elif uploaded_files and st.button("✨ Vysvetli mi nahrané súbory"):
+    process_input = True
+    prompt = "Prosím, vysvetli mi tieto poznámky ako učiteľ a ak sú tam príklady, vyrieš ich."
 else:
     process_input = False
 
-# Špeciálne tlačidlo pre prípady, keď chceš poslať LEN súbory bez písania
-if uploaded_files:
-    if st.button("🚀 Odoslať len prílohy"):
-        process_input = True
-        prompt = "Analyzuj tieto priložené súbory a vyrieš úlohy, ktoré na nich uvidíš."
-
-# 4. LOGIKA SPRACOVANIA
-if process_input and (prompt or uploaded_files):
-    
-    # Pridáme správu do histórie
-    display_text = prompt if prompt else "📎 (Odoslané prílohy na analýzu)"
-    st.session_state.messages.append({"role": "user", "content": display_text})
-    
-    # Vymažeme vizuálne súbory pre ďalšie kolo (voliteľné)
-    # st.rerun() by tu mohlo pomôcť, ale skúsme najprv plynulý beh
-    
+# 4. LOGIKA UČITEĽA
+if process_input:
+    st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
-        st.markdown(display_text)
+        st.markdown(prompt)
 
     with st.chat_message("assistant"):
         container = st.empty()
         payload = []
         
-        # Inštrukcie pre okamžité riešenie príkladov
-        payload.append("""
-        Si expert AI Tutor. Tvojou prioritou je:
-        1. Ak sú v prílohách príklady alebo úlohy, okamžite ich VYRIEŠ krok po kroku.
-        2. Ak je priložený text, zhrň ho.
-        3. Odpovedaj vždy v jazyku, v ktorom sú poznámky alebo otázka.
-        """)
+        # OSOBNOSŤ UČITEĽA: Milý, ľudský, ale odborný
+        teacher_prompt = """
+        Si skúsený, milý a trpezlivý učiteľ v škole. Tvojou úlohou nie je robiť 'analýzu', ale 'vysvetľovať' učivo.
         
-        # Pridanie histórie
-        for m in st.session_state.messages[-8:]:
+        PRAVIDLÁ:
+        1. Buď povzbudivý a používaj milý tón (napr. 'Pozrime sa na to spolu', 'To je skvelá otázka').
+        2. Ak sú na fotkách príklady, najprv ich vypočítaj krok po kroku a potom jemne vysvetli logiku.
+        3. Ak sú tam poznámky, vysvetli ich jednoducho a zrozumiteľne, ako keby si doučoval obľúbeného žiaka.
+        4. NIKDY nemeň správnosť faktov. Odbornosť musí byť 100%.
+        5. Odpovedaj v jazyku, ktorý používa žiak (slovenčina).
+        """
+        payload.append(teacher_prompt)
+        
+        # Pridanie histórie pre kontext
+        for m in st.session_state.messages[-6:]:
             payload.append(f"{m['role']}: {m['content']}")
 
         # Pridanie súborov
@@ -89,7 +77,7 @@ if process_input and (prompt or uploaded_files):
         for model_name in AVAILABLE_MODELS:
             if success: break
             try:
-                with st.spinner('Počítam a premýšľam...'):
+                with st.spinner('Učiteľ premýšľa...'):
                     model = genai.GenerativeModel(model_name)
                     response = model.generate_content(payload)
                     full_response = response.text
@@ -97,21 +85,17 @@ if process_input and (prompt or uploaded_files):
             except Exception as e:
                 if "429" in str(e): continue
                 else:
-                    st.error(f"Chyba: {e}")
+                    st.error(f"Technická chybička: {e}")
                     break
         
         if not success:
-            st.warning("⚠️ Učitelia majú pauzu. Skús to o 30 sekúnd.")
-            full_response = "Prepáč, momentálne som preťažený. Skús to prosím o chvíľu znova! ☕"
+            st.warning("⚠️ Naši učitelia majú práve krátku prestávku na kávu.")
+            full_response = "Prepáč, trošku som sa zamotal v limitoch. Skús mi túto otázku poslať ešte raz o 30 sekúnd, budem pripravený! 😊☕"
 
         container.markdown(full_response)
         st.session_state.messages.append({"role": "assistant", "content": full_response})
-        
-        # Zabezpečíme, aby sa stránka obnovila a nahrávač sa vyčistil (ak chceš)
-        # st.rerun() 
 
-# Bočná lišta ostane len na nastavenia
 with st.sidebar:
-    if st.button("🗑️ Vymazať konverzáciu"):
+    if st.button("🗑️ Nová téma (Vymazať čet)"):
         st.session_state.messages = []
         st.rerun()
