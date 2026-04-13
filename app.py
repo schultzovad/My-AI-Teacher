@@ -6,12 +6,12 @@ import re
 import unicodedata
 
 # 1. SETUP & MULTILINGUAL DICTIONARY
-# Zmenil som "auto" na "collapsed" - lišta bude pri štarte schovaná
+# Nastavujeme "expanded", aby bola lišta súčasťou plochy a neprekrývala ju (na širokých obrazovkách)
 st.set_page_config(
     page_title="AI Tutor Pro", 
     layout="wide", 
     page_icon="🎓",
-    initial_sidebar_state="collapsed" 
+    initial_sidebar_state="expanded" 
 )
 
 LANG_MAP = {
@@ -149,3 +149,4 @@ if messages and messages[-1]["role"] == "user":
                     status.update(label=L['error_label'], state="error")
                     st.error(L['error_msg'])
                 st.stop()
+                
