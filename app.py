@@ -12,7 +12,6 @@ if "GOOGLE_API_KEY" in st.secrets:
 else:
     st.error("Missing API Key!")
 
-# Skúsime iný model, ak by bol jeden vyčerpaný
 AVAILABLE_MODELS = ['gemini-flash-latest', 'gemini-1.5-flash']
 HISTORY_DIR = "chat_history"
 if not os.path.exists(HISTORY_DIR):
@@ -37,6 +36,9 @@ def load_all_chats():
     return chats
 
 def slugify(text):
+    # Odstráni diakritiku a divné znaky pre bezpečnosť súborov
+    import unicodedata
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
     clean = re.sub(r'[^\w\s-]', '', text).strip()
     return clean[:25] if clean else "Untitled_Chat"
 
@@ -45,7 +47,8 @@ if "chats" not in st.session_state:
     st.session_state.chats = load_all_chats()
     if not st.session_state.chats:
         st.session_state.chats = {"New Chat": []}
-if "current_chat" not in st.session_state:
+
+if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.chats:
     st.session_state.current_chat = list(st.session_state.chats.keys())[0]
 
 # 2. SIDEBAR
@@ -68,15 +71,20 @@ with st.sidebar:
                 st.rerun()
         with col2:
             if st.button("🗑️", key=f"del_{chat_name}"):
-                try: os.remove(os.path.join(HISTORY_DIR, f"{chat_name}.json"))
+                try: 
+                    os.remove(os.path.join(HISTORY_DIR, f"{chat_name}.json"))
                 except: pass
                 del st.session_state.chats[chat_name]
                 st.session_state.current_chat = list(st.session_state.chats.keys())[0] if st.session_state.chats else "New Chat"
+                if "New Chat" not in st.session_state.chats:
+                    st.session_state.chats["New Chat"] = []
                 st.rerun()
 
 # 3. MAIN UI
 st.title(f"🎓 {st.session_state.current_chat}")
+# Bezpečná kontrola existencie četu
 messages = st.session_state.chats.get(st.session_state.current_chat, [])
+
 for m in messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
@@ -84,22 +92,28 @@ for m in messages:
 # 4. INPUT
 st.write("---")
 uploaded_files = st.file_uploader("Upload", type=["jpg", "jpeg", "png", "pdf"], accept_multiple_files=True, label_visibility="collapsed")
+
 if input_text := st.chat_input("Ask your teacher..."):
+    # Fix pre KeyError: Skontrolujeme, či čet existuje, ak nie, vytvoríme ho
+    if st.session_state.current_chat not in st.session_state.chats:
+         st.session_state.chats[st.session_state.current_chat] = []
+    
     st.session_state.chats[st.session_state.current_chat].append({"role": "user", "content": input_text})
     save_chat(st.session_state.current_chat, st.session_state.chats[st.session_state.current_chat])
     st.rerun()
 
-# 5. EFEKTÍVNE GENEROVANIE (1 volanie = Odpoveď + Názov)
+# 5. EFEKTÍVNE GENEROVANIE
 if messages and messages[-1]["role"] == "user":
     with st.chat_message("assistant"):
         with st.status("Teaching in progress...", expanded=True) as status:
             
             # Špeciálna inštrukcia na šetrenie limitov
-            needs_title = st.session_state.current_chat.startswith("Chat_") and len(messages) <= 2
+            is_generic_name = st.session_state.current_chat.startswith("Chat_") or st.session_state.current_chat == "New Chat"
+            needs_title = is_generic_name and len(messages) <= 2
             
             system_msg = "You are a kind teacher. Respond in user's language."
             if needs_title:
-                system_msg += " IMPORTANT: Start your response with [TITLE: your_2_word_title] then a newline, then your explanation."
+                system_msg += " IMPORTANT: Start your response with [TITLE: 2_word_english_title] then a newline, then your explanation."
 
             payload = [system_msg]
             for m in messages[-5:]:
@@ -112,32 +126,48 @@ if messages and messages[-1]["role"] == "user":
                 model = genai.GenerativeModel('gemini-flash-latest')
                 response = model.generate_content(payload).text
                 
-                # Rozdelenie názvu a odpovede
                 final_response = response
                 if "[TITLE:" in response:
-                    parts = response.split("]", 1)
-                    title_part = parts[0].replace("[TITLE:", "").strip()
-                    final_response = parts[1].strip()
-                    
-                    # Premenovanie
-                    new_title = slugify(title_part)
-                    old_name = st.session_state.current_chat
-                    if new_title != old_name:
-                        old_path = os.path.join(HISTORY_DIR, f"{old_name}.json")
-                        new_path = os.path.join(HISTORY_DIR, f"{new_title}.json")
-                        if os.path.exists(old_path): os.rename(old_path, new_path)
-                        st.session_state.chats[new_title] = st.session_state.chats.pop(old_name)
-                        st.session_state.current_chat = new_title
+                    try:
+                        parts = response.split("]", 1)
+                        title_part = parts[0].replace("[TITLE:", "").strip()
+                        final_response = parts[1].strip()
+                        
+                        new_title = slugify(title_part)
+                        old_name = st.session_state.current_chat
+                        
+                        if new_title and new_title != old_name:
+                            old_path = os.path.join(HISTORY_DIR, f"{old_name}.json")
+                            new_path = os.path.join(HISTORY_DIR, f"{new_title}.json")
+                            
+                            # Ak už taký názov existuje, pridáme číslo
+                            if os.path.exists(new_path):
+                                new_title = f"{new_title}_{os.urandom(2).hex()}"
+                                new_path = os.path.join(HISTORY_DIR, f"{new_title}.json")
+
+                            if os.path.exists(old_path):
+                                os.rename(old_path, new_path)
+                            
+                            st.session_state.chats[new_title] = st.session_state.chats.pop(old_name)
+                            st.session_state.current_chat = new_title
+                    except Exception as e:
+                        print(f"Naming error: {e}")
 
                 status.update(label="Ready!", state="complete", expanded=False)
                 st.markdown(final_response)
+                
+                # Opäť poistka pre KeyError
+                if st.session_state.current_chat not in st.session_state.chats:
+                     st.session_state.chats[st.session_state.current_chat] = []
+                     
                 st.session_state.chats[st.session_state.current_chat].append({"role": "assistant", "content": final_response})
                 save_chat(st.session_state.current_chat, st.session_state.chats[st.session_state.current_chat])
                 st.rerun()
 
             except Exception as e:
-                status.update(label="Quota reached or error", state="error")
                 if "429" in str(e):
-                    st.warning("Denný limit 20 správ vyčerpaný. Oddýchni si, AI učiteľ sa vráti zajtra! 🌙")
+                    status.update(label="Daily limit reached", state="error")
+                    st.warning("You've hit the 20-message daily limit. See you tomorrow! 🌙")
                 else:
+                    status.update(label="Error occurred", state="error")
                     st.error(f"Error: {e}")
