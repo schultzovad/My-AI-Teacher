@@ -1,5 +1,6 @@
 import streamlit as st
-from streamlit_option_menu import option_menu # Ak toto nemáš, napíšem ti nižšie ako to spraviť cez HTML
+from streamlit_option_menu 
+import option_menu # Ak toto nemáš, napíšem ti nižšie ako to spraviť cez HTML
 
 # --- KONFIGURÁCIA STRÁNKY ---
 st.set_page_config(page_title="EduHub", layout="wide", page_icon="🎓", initial_sidebar_state="expanded")
