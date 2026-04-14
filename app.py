@@ -1,133 +1,73 @@
 import streamlit as st
-import google.generativeai as genai
-import json
-import os
-import re
-import unicodedata
 
-# 1. ZÁKLADNÉ NASTAVENIE
-st.set_page_config(page_title="EduHub Pro", layout="wide", page_icon="🎓", initial_sidebar_state="collapsed") # Schovali sme sidebar pre čistejší vzhľad
+# --- NASTAVENIA STRÁNKY ---
+st.set_page_config(page_title="EduHub AI", layout="wide", page_icon="🎓")
 
-HISTORY_DIR = "chat_history"
-FORUM_DIR = "shared_forum"
-for d in [HISTORY_DIR, FORUM_DIR]:
-    if not os.path.exists(d): os.makedirs(d)
-
-# 2. INTELIGENTNÁ NAVIGÁCIA CEZ URL
-# Prečítame si, čo chce Framer (napr. ?p=forum)
-query_params = st.query_params
-requested_page = query_params.get("p", "chat") # Ak v URL nič nie je, predvolíme chat
-
-# Mapovanie URL parametrov na indexy našich tabov
-page_map = {"chat": 0, "forum": 1, "groups": 2}
-current_tab_index = page_map.get(requested_page, 0)
-
-# 3. SLOVNÍK (nechávam len SK/EN pre stručnosť kódu tu, ty si tam nechaj všetky)
-LANG_MAP = {
+# --- PREKLADOVÝ SLOVNÍK ---
+lang_data = {
     "SK": {
-        "chat": "💬 AI Tutor", "forum": "🏫 Fórum", "groups": "👥 Skupiny", 
-        "new_chat": "➕ Nový čet", "search": "Hľadaj...", "upload_label": "Nahraj súbor", 
-        "subject": "Predmet", "files": "Súbory", "input": "Opýtaj sa AI...", 
-        "status_think": "Premýšľam...", "status_ready": "Hotovo!", 
-        "learn_with_ai": "🤖 Uč sa s AI", "mat_title": "Názov", "upload_btn": "Uverejniť",
-        "groups_msg": "Sekcia je uzamknutá.", "lang_label": "🌐 Jazyk",
-        "subjects": ["Angličtina", "Matematika", "Dejepis", "Biológia", "Slovenčina", "Iné"]
+        "chat_title": "🤖 AI Tutor",
+        "forum_title": "📚 Študijné materiály",
+        "groups_title": "👥 Študijné skupiny",
+        "input_placeholder": "S čím ti dnes pomôžem?",
+        "upload_label": "Nahraj svoje poznámky",
+        "success_upload": "Súbor bol úspešne nahraný!",
+        "create_group": "Vytvoriť novú skupinu"
     },
     "EN": {
-        "chat": "💬 AI Tutor", "forum": "🏫 Forum", "groups": "👥 Groups", 
-        "new_chat": "➕ New Chat", "search": "Search...", "upload_label": "Upload file", 
-        "subject": "Subject", "files": "Files", "input": "Ask AI...", 
-        "status_think": "Thinking...", "status_ready": "Ready!", 
-        "learn_with_ai": "🤖 Learn with AI", "mat_title": "Title", "upload_btn": "Publish",
-        "groups_msg": "Section locked.", "lang_label": "🌐 Language",
-        "subjects": ["English", "Mathematics", "History", "Biology", "Other"]
+        "chat_title": "🤖 AI Tutor",
+        "forum_title": "📚 Study Materials",
+        "groups_title": "👥 Study Groups",
+        "input_placeholder": "How can I help you today?",
+        "upload_label": "Upload your notes",
+        "success_upload": "File uploaded successfully!",
+        "create_group": "Create new group"
     }
 }
 
-if "lang" not in st.session_state: st.session_state.lang = "SK"
-L = LANG_MAP[st.session_state.lang]
+# --- VÝBER JAZYKA (V SIDEBARE ALEBO NAVRHU) ---
+lang = st.selectbox("Jazyk / Language", ["SK", "EN"])
+texts = lang_data[lang]
 
-# 4. POMOCNÉ FUNKCIE (Už bez času, ako sme sa dohodli)
-def save_chat(name, msgs):
-    with open(os.path.join(HISTORY_DIR, f"{name}.json"), "w", encoding="utf-8") as f:
-        json.dump({"messages": msgs}, f, ensure_ascii=False, indent=4)
+# --- LOGIKA NAVIGÁCIE (PARAMETRE Z FRAMERU) ---
+query_params = st.query_params
+selected_page = query_params.get("p", "chat")
 
-def load_all_chats():
-    chats = {}
-    if not os.path.exists(HISTORY_DIR): return chats
-    for f in [f for f in os.listdir(HISTORY_DIR) if f.endswith(".json")]:
-        try:
-            with open(os.path.join(HISTORY_DIR, f), "r", encoding="utf-8") as file:
-                chats[f.replace(".json", "")] = json.load(file)
-        except: continue
-    return chats
+# --- 1. SEKCIA: AI TUTOR ---
+if selected_page == "chat":
+    st.title(texts["chat_title"])
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-def slugify(text):
-    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
-    return re.sub(r'[^\w\s-]', '', text).strip()[:20]
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-# --- VLASTNÝ ŠTÝL (CSS), ABY TO SPLYNULO S WEBOM ---
-st.markdown("""
-    <style>
-    .stTabs [data-baseweb="tab-list"] { display: none; } /* Schováme horné prepínače Streamlitu */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    </style>
-    """, unsafe_allow_html=True)
+    if prompt := st.chat_input(texts["input_placeholder"]):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-# --- HLAVNÉ MENU (Taby sú teraz riadené URL parametrom z Frameru) ---
-tabs = st.tabs(["AI", "Forum", "Groups"])
+        with st.chat_message("assistant"):
+            response = f"Odpoveď na: {prompt}"
+            st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
 
-# ==========================================
-# SEKCIA 1: AI TUTOR (Index 0)
-# ==========================================
-with tabs[0]:
-    if current_tab_index == 0:
-        with st.sidebar:
-            st.selectbox(L["lang_label"], options=list(LANG_MAP.keys()), key="lang")
-            L = LANG_MAP[st.session_state.lang]
-            st.title(f"📂 {L['chat']}")
-            
-            if st.button(L['new_chat'], use_container_width=True, type="primary"):
-                nid = f"Chat_{len(load_all_chats())+1}"
-                save_chat(nid, [])
-                st.session_state.current_chat = nid; st.rerun()
-            
-            search_term = st.text_input("Search", placeholder=L['search'], label_visibility="collapsed")
-            st.write("---")
-            all_chats = load_all_chats()
-            for cname in list(all_chats.keys()):
-                if search_term.lower() in cname.lower():
-                    col_btn, col_del = st.columns([0.8, 0.2])
-                    with col_btn:
-                        if st.button(f"💬 {cname}", key=f"b_{cname}", use_container_width=True):
-                            st.session_state.current_chat = cname; st.rerun()
-                    with col_del:
-                        if st.button("🗑️", key=f"del_{cname}"):
-                            os.remove(os.path.join(HISTORY_DIR, f"{cname}.json")); st.rerun()
+# --- 2. SEKCIA: FÓRUM ---
+elif selected_page == "forum":
+    st.title(texts["forum_title"])
+    uploaded_file = st.file_uploader(texts["upload_label"], type=['pdf', 'png', 'jpg'])
+    if uploaded_file:
+        st.success(texts["success_upload"])
 
-        if "current_chat" in st.session_state:
-            st.title(f"🎓 {st.session_state.current_chat}")
-            msgs = all_chats.get(st.session_state.current_chat, {}).get("messages", [])
-            for m in msgs:
-                with st.chat_message(m["role"]): st.markdown(m["content"])
-            if prompt := st.chat_input(L['input']):
-                # ... tu by bola tvoja Gemini logika ...
-                st.write("AI odpovedá...")
+# --- 3. SEKCIA: SKUPINY ---
+elif selected_page == "groups":
+    st.title(texts["groups_title"])
+    st.subheader(texts["create_group"])
+    nazov = st.text_input("Názov / Name")
+    if st.button("OK"):
+        st.balloons()
 
-# ==========================================
-# SEKCIA 2: FÓRUM (Index 1)
-# ==========================================
-with tabs[1]:
-    if current_tab_index == 1:
-        st.title(f"{L['forum']}")
-        # ... tvoja logika fóra ...
-        st.info("Tu sú tvoje študijné materiály.")
-
-# ==========================================
-# SEKCIA 3: SKUPINY (Index 2)
-# ==========================================
-with tabs[2]:
-    if current_tab_index == 2:
-        st.title(L["groups"])
-        st.warning(L["groups_msg"])
+else:
+    st.error("Section not found.")
