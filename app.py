@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# --- 1. ZÁKLADNÉ NASTAVENIA (TU SA MENÍ NÁZOV STRÁNKY) ---
+# --- 1. ZÁKLADNÉ NASTAVENIA ---
 st.set_page_config(
     page_title="EduHub", 
     layout="wide", 
@@ -16,44 +16,56 @@ lang_data = {
     "ES": {"h": "🏠 Inicio", "c": "🤖 Tutor AI", "f": "📚 Materiales de estudio", "g": "👥 Grupos de estudio", "i": "¿Cómo te puedo ayudar?", "u": "Subir notas", "s": "¡Archivo subido con éxito!", "n": "Crear nuevo grupo"},
     "FR": {"h": "🏠 Accueil", "c": "🤖 Tuteur IA", "f": "📚 Matériels d'étude", "g": "👥 Groupes d'étude", "i": "Comment puis-je vous aider ?", "u": "Télécharger vos notes", "s": "Fichier téléchargé avec succès !", "n": "Créer un nouveau groupe"},
     "IT": {"h": "🏠 Home", "c": "🤖 Tutor IA", "f": "📚 Materiali di studio", "g": "👥 Gruppi di studio", "i": "Come posso aiutarti?", "u": "Carica le tue note", "s": "File caricato con successo!", "n": "Crea nuovo gruppo"},
-    "UA": {"h": "🏠 Головна", "c": "🤖 AI Тьютор", "f": "📚 Навчальні матеріали", "g": "👥 Навчальні групи", "i": "Чим я можу вам допомогти?", "u": "Завантажте свои нотатки", "s": "Файл успішно завантажено!", "n": "Створити нову групу"},
+    "UA": {"h": "🏠 Головна", "c": "🤖 AI Тьютор", "f": "📚 Навчальні матеріали", "g": "👥 Навчальні групи", "i": "Чим я можу вам допомогти?", "u": "Завантажте свої нотатки", "s": "Файл успішно завантажено!", "n": "Створити нову групу"},
     "RU": {"h": "🏠 Главная", "c": "🤖 AI Тьютор", "f": "📚 Учебные материалы", "g": "👥 Учебные группы", "i": "Чем я могу вам помочь?", "u": "Загрузите свои заметки", "s": "Файл успешно загружен!", "n": "Создать новую группу"}
 }
 
-# --- 3. BOČNÁ LIŠTA (SIDEBAR) ---
+# --- 3. LOGIKA PREPÍNANIA ---
+# Načítame si aktuálnu stránku z query parametrov
+query_params = st.query_params
+current_p = query_params.get("p", None)
+
+# --- 4. BOČNÁ LIŠTA (SIDEBAR) ---
 with st.sidebar:
     st.title("🎓 EduHub Menu")
-    lang = st.selectbox("Language / Jazyk", list(lang_data.keys()))
+    lang = st.selectbox("Language", list(lang_data.keys()))
     t = lang_data[lang]
     st.divider()
     
-    # TLAČIDLO DOMOV - Posiela ťa na tvoj Framer
+    # TLAČIDLO DOMOV (Opravené)
     if st.button(t["h"], use_container_width=True):
-        hlavna_adresa = "https://silent-terms-318372.framer.app/"
-        # Tento kód urobí tvrdý reset a vráti ťa na Framer
-        js_code = f"window.parent.location.replace('{hlavna_adresa}');"
-        components.html(f"<script>{js_code}</script>", height=0)
+        # Toto natvrdo povie celému oknu (Frameru), aby šlo na hlavnú adresu
+        components.html("""
+            <script>
+                window.top.location.href = "https://silent-terms-318372.framer.app/";
+            </script>
+        """, height=0)
         st.stop()
 
     st.divider()
-    page_selection = st.radio(t["h"].replace("🏠 ", ""), [t["c"], t["f"], t["g"]])
+    
+    # Navigácia vnútri Streamlitu pomocou radio buttonov
+    # Nastavíme index podľa toho, čo je v URL, aby to sedelo
+    options = [t["c"], t["f"], t["g"]]
+    page_selection = st.radio("Sekcia:", options)
 
-# --- 4. LOGIKA SKRÝVANIA ---
-if not st.query_params.get("p"):
+# --- 5. LOGIKA ZOBRAZENIA ---
+# Ak v URL nie je parameter "p", nič neukazuj (čistý Home vo Frameri)
+if current_p is None:
     st.stop()
 
-# --- 5. ZOBRAZENIE OBSAHU ---
+# Zobrazenie obsahu podľa výberu v bočnom menu
 if page_selection == t["c"]:
     st.title(t["c"])
     if "messages" not in st.session_state: st.session_state.messages = []
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]): st.markdown(message["content"])
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]): st.markdown(m["content"])
     if prompt := st.chat_input(t["i"]):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
-        response = "Analyzujem vaše poznámky a pripravujem odpoveď..."
-        with st.chat_message("assistant"): st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        res = "Analyzujem vaše poznámky..."
+        with st.chat_message("assistant"): st.markdown(res)
+        st.session_state.messages.append({"role": "assistant", "content": res})
 
 elif page_selection == t["f"]:
     st.title(t["f"])
@@ -61,5 +73,5 @@ elif page_selection == t["f"]:
 
 elif page_selection == t["g"]:
     st.title(t["g"])
-    nazov = st.text_input("Name")
+    n = st.text_input("Name")
     if st.button(t["n"]): st.balloons()
