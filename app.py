@@ -56,20 +56,24 @@ lang_data = {
     }
 }
 
-# --- 3. BOČNÁ LIŠTA (SIDEBAR) ---
+# --- 3. LOGIKA NAVIGÁCIE (KĽÚČOVÁ ČASŤ) ---
+query_params = st.query_params
+selected_page = query_params.get("p", None)  # None znamená, že nie je vybratá žiadna stránka
+
+# Ak nie je v URL parameter ?p=, tak nezobrazuj nič a skonči
+if selected_page is None:
+    st.stop() 
+
+# --- 4. BOČNÁ LIŠTA (SIDEBAR) ---
+# Táto lišta sa zobrazí až VTEDY, keď užívateľ na niečo klikne
 with st.sidebar:
     st.title("🎓 EduHub Menu")
-    
     lang = st.selectbox("Language / Jazyk", ["SK", "EN", "DE", "ES", "FR", "IT", "UA", "RU"])
     t = lang_data[lang]
-    
     st.divider()
-    st.subheader(t["nav_title"])
     
-    # ŠPECIÁLNE TLAČIDLO DOMOV
     if st.button(t["home"], use_container_width=True):
-        # Tento kúsok kódu povie prehliadaču, aby skroloval hore
-        components.html("<script>window.parent.postMessage('scroll_to_top', '*'); window.parent.scrollTo(0,0);</script>", height=0)
+        # Resetuje URL a vymaže všetko
         st.query_params.clear()
         st.rerun()
 
@@ -85,10 +89,7 @@ with st.sidebar:
         st.query_params.p = "groups"
         st.rerun()
 
-# --- 4. LOGIKA STRÁNOK ---
-query_params = st.query_params
-selected_page = query_params.get("p", "chat")
-
+# --- 5. OBSAH STRÁNOK ---
 if selected_page == "chat":
     st.title(t["chat_title"])
     if "messages" not in st.session_state:
@@ -101,7 +102,7 @@ if selected_page == "chat":
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
-            response = f"Odpoveď ({lang}): Rozumiem, analyzujem '{prompt}'."
+            response = f"Simulovaná odpoveď ({lang}): {prompt}"
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
 
@@ -117,6 +118,3 @@ elif selected_page == "groups":
     if st.button(t["create_group"]):
         st.balloons()
         st.success(f"Skupina '{nazov_skupiny}' vytvorená!")
-
-else:
-    st.error("Sekcia neexistuje.")
