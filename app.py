@@ -1,48 +1,51 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# --- 1. KONFIGURÁCIA ---
+# --- 1. KONFIGURÁCIA (Vynútenie otvorenej lišty) ---
 st.set_page_config(
     page_title="EduHub", 
     layout="wide", 
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS "SILNÁ RUKA" (VYNÚTENIE LIŠTY) ---
+# --- 2. CSS "ZVIDITEĽŇOVAČ" ---
 st.markdown("""
     <style>
-    /* Skryje nepotrebné prvky */
+    /* Skryje Streamlit lišty */
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* TOTO VYNÚTI ZOBRAZENIE LIŠTY AJ V MALOM EMBED BOXE */
+    /* VYNÚTENIE FARBY BOČNEJ LIŠTY (Aby nebola biela na bielom) */
     [data-testid="stSidebar"] {
+        background-color: #f0f2f6 !important; /* Jemná sivá, aby si ju videla */
         visibility: visible !important;
         display: block !important;
-        min-width: 250px !important;
-    }
-    
-    /* Odstráni tlačidlo na schovávanie lišty, aby sa náhodou nezavrela */
-    [data-testid="collapsedControl"] {
-        display: none;
+        border-right: 1px solid #e6e9ef;
     }
 
+    /* Zabezpečí, aby text v lište bol čierny a viditeľný */
+    [data-testid="stSidebar"] .stText, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
+        color: #31333F !important;
+    }
+
+    /* Odstránenie bielych okrajov */
     .block-container {
         padding-top: 1rem;
+        background-color: white;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 3. SLOVNÍK ---
 lang_data = {
-    "SK": {"h": "🏠 Domov", "c": "🤖 AI Tutor", "f": "📚 Študijné materiály", "g": "👥 Študijné skupiny", "i": "S čím ti dnes pomôžem?"},
-    "EN": {"h": "🏠 Home", "c": "🤖 AI Tutor", "f": "📚 Study Materials", "g": "👥 Study Groups", "i": "How can I help you today?"}
+    "SK": {"h": "🏠 Domov", "c": "🤖 AI Tutor", "f": "📚 Materiály", "g": "👥 Skupiny", "i": "S čím ti dnes pomôžem?"},
+    "EN": {"h": "🏠 Home", "c": "🤖 AI Tutor", "f": "📚 Materials", "g": "👥 Groups", "i": "How can I help you today?"}
 }
 
-# --- 4. SIDEBAR ---
+# --- 4. SIDEBAR (TOTO JE TÁ LIŠTA) ---
 with st.sidebar:
-    st.title("🎓 EduHub")
-    lang = st.selectbox("Language", list(lang_data.keys()))
+    st.markdown("### 🎓 EduHub Menu")
+    lang = st.selectbox("Language", list(lang_data.keys()), key="lang_selector")
     t = lang_data[lang]
     st.divider()
     
@@ -52,10 +55,10 @@ with st.sidebar:
         st.stop()
 
     st.divider()
-    page_selection = st.radio("Menu", [t["c"], t["f"], t["g"]])
+    page = st.radio("Sekcia", [t["c"], t["f"], t["g"]])
 
 # --- 5. OBSAH ---
-if page_selection == t["c"]:
+if page == t["c"]:
     st.title(t["c"])
     if "m" not in st.session_state: st.session_state.m = []
     for m in st.session_state.m:
@@ -66,11 +69,6 @@ if page_selection == t["c"]:
         res = "Analyzujem..."
         with st.chat_message("assistant"): st.markdown(res)
         st.session_state.m.append({"role": "assistant", "content": res})
-
-elif page_selection == t["f"]:
-    st.title(t["f"])
-    st.file_uploader("Upload")
-
-elif page_selection == t["g"]:
-    st.title(t["g"])
-    st.text_input("Group Name")
+else:
+    st.title(page)
+    st.write("Obsah sa pripravuje...")
