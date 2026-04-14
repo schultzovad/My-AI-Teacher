@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 # --- 1. ZÁKLADNÉ NASTAVENIA ---
 st.set_page_config(page_title="EduHub AI Tutor", layout="wide", page_icon="🎓")
@@ -59,14 +60,16 @@ lang_data = {
 with st.sidebar:
     st.title("🎓 EduHub Menu")
     
-    # Výber jazyka (všetkých 8)
     lang = st.selectbox("Language / Jazyk", ["SK", "EN", "DE", "ES", "FR", "IT", "UA", "RU"])
     t = lang_data[lang]
     
     st.divider()
     st.subheader(t["nav_title"])
     
+    # ŠPECIÁLNE TLAČIDLO DOMOV
     if st.button(t["home"], use_container_width=True):
+        # Tento kúsok kódu povie prehliadaču, aby skroloval hore
+        components.html("<script>window.parent.postMessage('scroll_to_top', '*'); window.parent.scrollTo(0,0);</script>", height=0)
         st.query_params.clear()
         st.rerun()
 
@@ -116,4 +119,4 @@ elif selected_page == "groups":
         st.success(f"Skupina '{nazov_skupiny}' vytvorená!")
 
 else:
-    st.error("Ups! Sekcia neexistuje.")
+    st.error("Sekcia neexistuje.")
