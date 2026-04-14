@@ -37,7 +37,7 @@ with st.sidebar:
         # Toto natvrdo povie celému oknu (Frameru), aby šlo na hlavnú adresu
         components.html("""
             <script>
-                window.top.location.href = "https://silent-terms-318372.framer.app/";
+                window.top.location.href = "https://my-ai-teacher-hsybxzfpdyouwjg5w8suio.streamlit.app/";
             </script>
         """, height=0)
         st.stop()
