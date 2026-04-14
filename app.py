@@ -56,35 +56,37 @@ lang_data = {
     }
 }
 
-# --- 3. LOGIKA NAVIGÁCIE (KĽÚČOVÁ ČASŤ) ---
+# --- 3. LOGIKA NAVIGÁCIE ---
 query_params = st.query_params
-selected_page = query_params.get("p", None)  # None znamená, že nie je vybratá žiadna stránka
+selected_page = query_params.get("p", None)
 
-# Ak nie je v URL parameter ?p=, tak nezobrazuj nič a skonči
+# Ak nie je nič vybraté, zobrazíme biele miesto (aby netrčal čet na úvode)
 if selected_page is None:
-    st.stop() 
+    st.stop()
 
 # --- 4. BOČNÁ LIŠTA (SIDEBAR) ---
-# Táto lišta sa zobrazí až VTEDY, keď užívateľ na niečo klikne
 with st.sidebar:
     st.title("🎓 EduHub Menu")
     lang = st.selectbox("Language / Jazyk", ["SK", "EN", "DE", "ES", "FR", "IT", "UA", "RU"])
     t = lang_data[lang]
     st.divider()
     
+    # TLAČIDLO DOMOV, KTORÉ REÁLNE SKOČÍ NA HLAVNÝ WEB
     if st.button(t["home"], use_container_width=True):
-        # Resetuje URL a vymaže všetko
-        st.query_params.clear()
-        st.rerun()
+        # SEM VLOŽ SVOJU ADRESU Z FRAMERU (medzi tie úvodzovky):
+        hlavna_adresa = "https://silent-terms-318372.framer.app/" 
+        
+        # Tento kód povie prehliadaču: "Zmeň adresu celého okna na hlavnú stránku"
+        js = f"window.parent.location.href = '{hlavna_adresa}';"
+        components.html(f"<script>{js}</script>", height=0)
+        st.stop()
 
     if st.button(t["chat_title"], use_container_width=True):
         st.query_params.p = "chat"
         st.rerun()
-        
     if st.button(t["forum_title"], use_container_width=True):
         st.query_params.p = "forum"
         st.rerun()
-        
     if st.button(t["groups_title"], use_container_width=True):
         st.query_params.p = "groups"
         st.rerun()
