@@ -8,55 +8,55 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS PRE MAXIMÁLNU VIDITEĽNOSŤ ŠÍPKY ---
+# --- 2. CSS - ŠÍPKA VON Z LIŠTY ---
 st.markdown("""
     <style>
-    /* Skryje prebytočný balast */
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* CELÉ POZADIE STRÁNKY */
-    .stApp {
-        background-color: white;
-    }
+    .stApp { background-color: white; }
 
-    /* ŠÍPKA (VYSÚVACÍ PRVOK) - POSUNUTÁ PORIADNE DOVNÚTRA */
+    /* ŠÍPKA - POSUNUTÁ ÚPLNE MIMO LIŠTU */
     [data-testid="collapsedControl"] {
-        top: 40px !important;    /* Viac miesta zhora */
-        left: 40px !important;   /* Viac miesta zľava - teraz už musí byť v zábere */
+        top: 30px !important;
+        left: 280px !important; /* TOTO ju vystrelí von z lišty (lišta má cca 250px) */
         display: flex !important;
         visibility: visible !important;
-        background-color: #f0f2f6 !important; /* Jemne sivá, aby "svietila" na bielom */
-        border: 2px solid #31333F !important; /* Čierny okraj, aby bola jasne ohraničená */
-        border-radius: 10px !important;       /* Zaoblený štvorec/obdĺžnik */
-        width: 50px !important;
-        height: 50px !important;
+        background-color: #ffffff !important;
+        border: 2px solid #000000 !important;
+        border-radius: 50% !important;
+        width: 45px !important;
+        height: 45px !important;
         z-index: 999999 !important;
-        cursor: pointer !important;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.3) !important;
     }
 
-    /* HLAVNÝ OBSAH POSUNIEME, ABY ŠÍPKA DOŇHO NEZASAHOVALA */
-    .block-container {
-        padding-top: 80px !important; /* Vytvorí priestor pod šípkou */
-        padding-left: 50px !important;
+    /* Keď je lišta ZATVORENÁ, šípka sa vráti na viditeľné miesto pri kraji */
+    section[data-testid="stSidebar"][aria-expanded="false"] + section [data-testid="collapsedControl"] {
+        left: 30px !important;
     }
 
-    /* BIELA BOČNÁ LIŠTA */
+    /* Vzhľad bočnej lišty */
     [data-testid="stSidebar"] {
         background-color: white !important;
         border-right: 1px solid #e6e9ef;
     }
 
-    /* Farba textu a ikony */
+    /* Úprava obsahu aby nezavadzal */
+    .block-container {
+        padding-top: 50px !important;
+        padding-left: 80px !important;
+    }
+    
     [data-testid="stSidebar"] * { color: #31333F !important; }
-    [data-testid="collapsedControl"] svg { fill: #31333F !important; }
+    [data-testid="collapsedControl"] svg { fill: #000000 !important; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 3. SIDEBAR ---
 with st.sidebar:
-    st.markdown("## 🎓 EduHub Menu")
-    lang = st.selectbox("Language / Jazyk", ["SK", "EN"])
+    st.title("🎓 EduHub Menu")
+    lang = st.selectbox("Language", ["SK", "EN"])
     st.divider()
     page = st.radio("Sekcia", ["🤖 AI Tutor", "📚 Materiály", "👥 Skupiny"])
     st.divider()
