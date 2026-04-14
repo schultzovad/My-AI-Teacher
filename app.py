@@ -1,8 +1,12 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# --- 1. ZÁKLADNÉ NASTAVENIA ---
-st.set_page_config(page_title="EduHub AI Tutor", layout="wide", page_icon="🎓")
+# --- 1. ZÁKLADNÉ NASTAVENIA (TU SA MENÍ NÁZOV STRÁNKY) ---
+st.set_page_config(
+    page_title="EduHub", 
+    layout="wide", 
+    page_icon="🎓"
+)
 
 # --- 2. KOMPLETNÝ SLOVNÍK (8 JAZYKOV) ---
 lang_data = {
@@ -12,32 +16,29 @@ lang_data = {
     "ES": {"h": "🏠 Inicio", "c": "🤖 Tutor AI", "f": "📚 Materiales de estudio", "g": "👥 Grupos de estudio", "i": "¿Cómo te puedo ayudar?", "u": "Subir notas", "s": "¡Archivo subido con éxito!", "n": "Crear nuevo grupo"},
     "FR": {"h": "🏠 Accueil", "c": "🤖 Tuteur IA", "f": "📚 Matériels d'étude", "g": "👥 Groupes d'étude", "i": "Comment puis-je vous aider ?", "u": "Télécharger vos notes", "s": "Fichier téléchargé avec succès !", "n": "Créer un nouveau groupe"},
     "IT": {"h": "🏠 Home", "c": "🤖 Tutor IA", "f": "📚 Materiali di studio", "g": "👥 Gruppi di studio", "i": "Come posso aiutarti?", "u": "Carica le tue note", "s": "File caricato con successo!", "n": "Crea nuovo gruppo"},
-    "UA": {"h": "🏠 Головна", "c": "🤖 AI Тьютор", "f": "📚 Навчальні матеріали", "g": "👥 Навчальні групи", "i": "Чим я можу вам допомогти?", "u": "Завантажте свої нотатки", "s": "Файл успішно завантажено!", "n": "Створити нову групу"},
+    "UA": {"h": "🏠 Головна", "c": "🤖 AI Тьютор", "f": "📚 Навчальні матеріали", "g": "👥 Навчальні групи", "i": "Чим я можу вам допомогти?", "u": "Завантажте свои нотатки", "s": "Файл успішно завантажено!", "n": "Створити нову групу"},
     "RU": {"h": "🏠 Главная", "c": "🤖 AI Тьютор", "f": "📚 Учебные материалы", "g": "👥 Учебные группы", "i": "Чем я могу вам помочь?", "u": "Загрузите свои заметки", "s": "Файл успешно загружен!", "n": "Создать новую группу"}
 }
 
 # --- 3. BOČNÁ LIŠTA (SIDEBAR) ---
 with st.sidebar:
     st.title("🎓 EduHub Menu")
-    
     lang = st.selectbox("Language / Jazyk", list(lang_data.keys()))
     t = lang_data[lang]
     st.divider()
     
-    # TLAČIDLO DOMOV - TU SA MENÍ URL
+    # TLAČIDLO DOMOV - Posiela ťa na tvoj Framer
     if st.button(t["h"], use_container_width=True):
-        # Toto povie prehliadaču, aby zmenil celú stránku (aj nadradený Framer)
         hlavna_adresa = "https://silent-terms-318372.framer.app/"
-        js_code = f"window.parent.location.href = '{hlavna_adresa}';"
+        # Tento kód urobí tvrdý reset a vráti ťa na Framer
+        js_code = f"window.parent.location.replace('{hlavna_adresa}');"
         components.html(f"<script>{js_code}</script>", height=0)
         st.stop()
 
     st.divider()
-    # Výber sekcie priamo v Streamlite
     page_selection = st.radio(t["h"].replace("🏠 ", ""), [t["c"], t["f"], t["g"]])
 
-# --- 4. LOGIKA SKRÝVANIA (DÔLEŽITÉ!) ---
-# Ak v URL nie je parameter ?p=, aplikácia sa zastaví (aby nebola biela plocha na Home)
+# --- 4. LOGIKA SKRÝVANIA ---
 if not st.query_params.get("p"):
     st.stop()
 
@@ -50,7 +51,7 @@ if page_selection == t["c"]:
     if prompt := st.chat_input(t["i"]):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
-        response = "Analyzujem vaše zadanie..."
+        response = "Analyzujem vaše poznámky a pripravujem odpoveď..."
         with st.chat_message("assistant"): st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
 
