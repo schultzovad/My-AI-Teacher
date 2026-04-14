@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 # --- 1. NASTAVENIA ---
 st.set_page_config(page_title="EduHub AI Tutor", layout="wide", page_icon="🎓")
 
-# --- 2. SLOVNÍK ---
+# --- 2. SLOVNÍK (8 JAZYKOV) ---
 lang_data = {
     "SK": {"nav_title": "Navigácia", "home": "🏠 Domov", "chat_title": "🤖 AI Tutor", "forum_title": "📚 Študijné materiály", "groups_title": "👥 Študijné skupiny", "input_placeholder": "S čím ti dnes pomôžem?", "upload_label": "Nahraj svoje poznámky", "success_upload": "Súbor bol úspešne nahraný!", "create_group": "Vytvoriť novú skupinu"},
     "EN": {"nav_title": "Navigation", "home": "🏠 Home", "chat_title": "🤖 AI Tutor", "forum_title": "📚 Study Materials", "groups_title": "👥 Study Groups", "input_placeholder": "How can I help you today?", "upload_label": "Upload your notes", "success_upload": "File uploaded successfully!", "create_group": "Create new group"},
@@ -16,20 +16,25 @@ lang_data = {
     "RU": {"nav_title": "Навигация", "home": "🏠 Главная", "chat_title": "🤖 AI Тьютор", "forum_title": "📚 Учебные материалы", "groups_title": "👥 Учебные группы", "input_placeholder": "Чем я могу вам помочь?", "upload_label": "Загрузите свои заметки", "success_upload": "Файл успешно загружен!", "create_group": "Создать новую группу"}
 }
 
-# --- 3. SIDEBAR ---
+# --- 3. BOČNÁ LIŠTA (SIDEBAR) - MUSÍ BYŤ NA ZAČIATKU ---
 with st.sidebar:
     st.title("🎓 EduHub Menu")
     lang = st.selectbox("Language / Jazyk", list(lang_data.keys()))
     t = lang_data[lang]
     st.divider()
     
-    # Tlačidlo DOMOV (vráti ťa na hlavnú stránku webu)
+    # Domov tlačidlo
     if st.button(t["home"], use_container_width=True):
+        # Tvoj link z Frameru
         hlavna_adresa = "https://silent-terms-318372.framer.app/"
-        components.html(f"<script>window.parent.location.href = '{hlavna_adresa}';</script>", height=0)
-        st.stop()
+        js = f"window.parent.location.href = '{hlavna_adresa}';"
+        components.html(f"<script>{js}</script>", height=0)
+        st.query_params.clear()
+        st.rerun()
 
     st.divider()
+    
+    # Navigačné tlačidlá - Tieto tu budú VŽDY
     if st.button(t["chat_title"], use_container_width=True):
         st.query_params.p = "chat"
         st.rerun()
@@ -40,9 +45,14 @@ with st.sidebar:
         st.query_params.p = "groups"
         st.rerun()
 
-# --- 4. LOGIKA OBSAHU ---
+# --- 4. LOGIKA ZOBRAZOVANIA OBSAHU ---
 query_params = st.query_params
-selected_page = query_params.get("p", "chat") # Tu vrátime "chat" ako predvolený, lebo na túto stránku prídeme len keď chceme appku
+selected_page = query_params.get("p", None)
+
+if selected_page is None:
+    # Ak nie je nič vybraté, zobrazíme len prázdne miesto (aby to nekazilo úvod webu)
+    st.write("") 
+    st.stop()
 
 if selected_page == "chat":
     st.title(t["chat_title"])
