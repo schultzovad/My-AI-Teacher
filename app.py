@@ -1,68 +1,82 @@
 import streamlit as st
 
-# --- NASTAVENIA STRÁNKY ---
-st.set_page_config(page_title="EduHub AI", layout="wide", page_icon="🎓")
+# --- 1. NASTAVENIA STRÁNKY ---
+st.set_page_config(page_title="EduHub AI Tutor", layout="wide", page_icon="🎓")
 
-# --- KOMPLETNÝ PREKLADOVÝ SLOVNÍK ---
+# --- 2. PREKLADOVÝ SLOVNÍK ---
 lang_data = {
     "SK": {
+        "nav_title": "Navigácia",
         "chat_title": "🤖 AI Tutor",
         "forum_title": "📚 Študijné materiály",
         "groups_title": "👥 Študijné skupiny",
         "input_placeholder": "S čím ti dnes pomôžem?",
         "upload_label": "Nahraj svoje poznámky",
         "success_upload": "Súbor bol úspešne nahraný!",
-        "create_group": "Vytvoriť novú skupinu",
-        "lang_label": "Vyber si jazyk"
+        "create_group": "Vytvoriť novú skupinu"
     },
     "EN": {
+        "nav_title": "Navigation",
         "chat_title": "🤖 AI Tutor",
         "forum_title": "📚 Study Materials",
         "groups_title": "👥 Study Groups",
         "input_placeholder": "How can I help you today?",
         "upload_label": "Upload your notes",
         "success_upload": "File uploaded successfully!",
-        "create_group": "Create new group",
-        "lang_label": "Choose language"
+        "create_group": "Create new group"
     },
     "DE": {
+        "nav_title": "Navigation",
         "chat_title": "🤖 AI Tutor",
         "forum_title": "📚 Lernmaterialien",
         "groups_title": "👥 Studiengruppen",
-        "input_placeholder": "Wie kann ich dir heute helfen?",
+        "input_placeholder": "Wie kann ich dir helfen?",
         "upload_label": "Notizen hochladen",
         "success_upload": "Datei erfolgreich hochgeladen!",
-        "create_group": "Neue Gruppe erstellen",
-        "lang_label": "Sprache wählen"
+        "create_group": "Neue Gruppe erstellen"
     },
     "ES": {
-        "chat_title": "🤖 AI Tutor",
+        "nav_title": "Navegación",
+        "chat_title": "🤖 Tutor AI",
         "forum_title": "📚 Materiales de estudio",
         "groups_title": "👥 Grupos de estudio",
-        "input_placeholder": "¿Cómo te puedo ayudar hoy?",
+        "input_placeholder": "¿Cómo te puedo ayudar?",
         "upload_label": "Subir notas",
         "success_upload": "¡Archivo subido con éxito!",
-        "create_group": "Crear nuevo grupo",
-        "lang_label": "Elegir idioma"
+        "create_group": "Crear nuevo grupo"
     }
 }
 
-# --- SIDEBAR (Bočná lišta pre výber jazyka) ---
+# --- 3. BOČNÁ LIŠTA (SIDEBAR) PRE NAVIGÁCIU ---
+# Toto vyrieši tvoj problém s preklikávaním!
 with st.sidebar:
+    st.title("🎓 EduHub Menu")
+    
+    # Výber jazyka
     lang = st.selectbox("Language / Jazyk", ["SK", "EN", "DE", "ES"])
+    t = lang_data[lang]
+    
     st.divider()
-    st.write(lang_data[lang]["lang_label"])
+    st.subheader(t["nav_title"])
+    
+    # Tlačidlá, ktoré prepínajú sekcie priamo v okne
+    if st.button(t["chat_title"], use_container_width=True):
+        st.query_params.p = "chat"
+        st.rerun()
+    if st.button(t["forum_title"], use_container_width=True):
+        st.query_params.p = "forum"
+        st.rerun()
+    if st.button(t["groups_title"], use_container_width=True):
+        st.query_params.p = "groups"
+        st.rerun()
 
-texts = lang_data[lang]
-
-# --- LOGIKA NAVIGÁCIE ---
+# --- 4. LOGIKA STRÁNOK ---
 query_params = st.query_params
 selected_page = query_params.get("p", "chat")
 
-# --- 1. SEKCIA: AI TUTOR ---
+# SEKCIA: CHAT
 if selected_page == "chat":
-    st.title(texts["chat_title"])
-    
+    st.title(t["chat_title"])
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -70,32 +84,33 @@ if selected_page == "chat":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input(texts["input_placeholder"]):
+    if prompt := st.chat_input(t["input_placeholder"]):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
-
+        
         with st.chat_message("assistant"):
-            # Tu je tvoja AI odpoveď
-            response = f"Simulovaná odpoveď ({lang}): Rozumiem, tvoja otázka je: '{prompt}'."
+            response = f"Odpoveď v jazyku {lang}: Rozumiem vašej požiadavke '{prompt}'."
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
 
-# --- 2. SEKCIA: FÓRUM ---
+# SEKCIA: FÓRUM
 elif selected_page == "forum":
-    st.title(texts["forum_title"])
-    uploaded_file = st.file_uploader(texts["upload_label"], type=['pdf', 'png', 'jpg'])
+    st.title(t["forum_title"])
+    uploaded_file = st.file_uploader(t["upload_label"], type=['pdf', 'png', 'jpg'])
     if uploaded_file:
-        st.success(texts["success_upload"])
+        st.success(t["success_upload"])
+    st.info("Tu sa čoskoro objavia príspevky od spolužiakov.")
 
-# --- 3. SEKCIA: SKUPINY ---
+# SEKCIA: SKUPINY
 elif selected_page == "groups":
-    st.title(texts["groups_title"])
-    st.subheader(texts["create_group"])
-    nazov = st.text_input("Názov / Name")
-    if st.button("Vytvoriť / Create"):
+    st.title(t["groups_title"])
+    st.subheader(t["create_group"])
+    nazov = st.text_input("Názov skupiny")
+    if st.button("Vytvoriť"):
         st.balloons()
+        st.success(f"Skupina {nazov} vytvorená!")
 
-# --- OŠETRENIE CHYBY ---
+# OŠETRENIE CHYBY
 else:
-    st.error(f"Sekcia '{selected_page}' sa nenašla. Skontroluj link vo Frameri!")
+    st.error("Sekcia sa nenašla. Použi menu vľavo.")
