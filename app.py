@@ -3,7 +3,7 @@ import streamlit as st
 # 1. Konfigurácia
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
-# 2. CSS - AGRESÍVNE NASTAVENIE ŠÍPKY
+# 2. CSS - TOTÁLNE VYSTRELENIE ŠÍPKY VON
 st.markdown("""
     <style>
     header {visibility: hidden;}
@@ -15,37 +15,47 @@ st.markdown("""
         min-width: 260px !important;
     }
 
-    /* TÁTO ŠÍPKA TI UŽ NEZMIZNE */
+    /* ŠÍPKA - MUSÍ BYŤ VONKU Z LIŠTY */
     [data-testid="collapsedControl"] {
-        display: flex !important;      /* Vynúti zobrazenie */
-        visibility: visible !important; /* Vynúti viditeľnosť */
-        left: 20px !important;         /* Posun od kraja boxu vo Frameri */
-        top: 20px !important;
-        z-index: 1000001 !important;   /* Musí byť nad všetkým */
-        background-color: white !important;
-        border: 2px solid #ff4d4d !important; /* ČERVENÝ OKRAJ aby si ju hneď videla */
+        display: flex !important;
+        visibility: visible !important;
+        
+        /* Fixná pozícia v bielom priestore aplikácie */
+        position: fixed !important;
+        left: 30px !important;  /* Toto ju udrží VŽDY 3 centimetre od ľavého okraja boxu */
+        top: 30px !important;
+        
+        z-index: 1000000 !important;
+        background-color: #ffffff !important;
+        border: 2px solid #ff4d4d !important; /* Červená, aby si ju videla */
         border-radius: 50% !important;
-        width: 45px !important;
-        height: 45px !important;
-        box-shadow: 0px 4px 15px rgba(0,0,0,0.3) !important;
+        width: 50px !important;
+        height: 50px !important;
+        box-shadow: 4px 4px 15px rgba(0,0,0,0.2) !important;
+        cursor: pointer !important;
     }
 
-    /* Ak je lišta OTVORENÁ, šípka sa posunie kúsok doprava k jej okraju */
+    /* Keď je lišta OTVORENÁ, šípka sa posunie doprava, aby nezavadzala v menu */
     section[data-testid="stSidebar"][aria-expanded="true"] + section [data-testid="collapsedControl"] {
-        left: 230px !important;
+        left: 280px !important; /* Skočí za okraj otvorenej lišty */
     }
 
-    /* Červené tlačidlo "Nový čet" */
+    /* Odstúpime obsah, aby šípka nič neprekrývala */
+    .block-container {
+        padding-top: 80px !important;
+        padding-left: 60px !important;
+    }
+
+    /* Červené tlačidlo */
     div.stButton > button {
         background-color: #ff4d4d !important;
         color: white !important;
         border-radius: 8px !important;
-        width: 100% !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Sidebar (Tvoj dizajn)
+# 3. Sidebar
 with st.sidebar:
     st.markdown("### 🎓 EduHub")
     st.selectbox("Jazyk", ["SK", "EN"])
@@ -58,4 +68,4 @@ with st.sidebar:
 
 # 4. Hlavná plocha
 st.title("🤖 AI Tutor")
-st.chat_input("S čím pomôžem?")
+st.chat_input("S čím dnes pomôžem?")
