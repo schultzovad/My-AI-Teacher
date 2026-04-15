@@ -1,13 +1,13 @@
 import streamlit as st
 
-# 1. Konfigurácia
+# 1. Čistá konfigurácia
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
-# 2. CSS - TOTÁLNE VYSTRELENIE ŠÍPKY VON
+# 2. CSS, KTORÉ TÚ ŠÍPKU "PRIKLINCUJE" DO BIELÉHO PRIESTORU
 st.markdown("""
     <style>
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    header {visibility: hidden !important;}
+    footer {visibility: hidden !important;}
 
     /* SIVÁ LIŠTA */
     [data-testid="stSidebar"] {
@@ -15,42 +15,36 @@ st.markdown("""
         min-width: 260px !important;
     }
 
-    /* ŠÍPKA - MUSÍ BYŤ VONKU Z LIŠTY */
+    /* ŠÍPKA - MUSÍ BYŤ VIDITEĽNÁ VŽDY A VŠADE */
     [data-testid="collapsedControl"] {
         display: flex !important;
         visibility: visible !important;
-        
-        /* Fixná pozícia v bielom priestore aplikácie */
         position: fixed !important;
-        left: 30px !important;  /* Toto ju udrží VŽDY 3 centimetre od ľavého okraja boxu */
-        top: 30px !important;
         
-        z-index: 1000000 !important;
+        /* TOTO ju hodí do bieleho priestoru aplikácie */
+        left: 40px !important; 
+        top: 40px !important;
+        
+        z-index: 9999999 !important;
         background-color: #ffffff !important;
-        border: 2px solid #ff4d4d !important; /* Červená, aby si ju videla */
+        border: 3px solid #ff4d4d !important; /* HRUBÝ ČERVENÝ OKRAJ */
         border-radius: 50% !important;
-        width: 50px !important;
-        height: 50px !important;
-        box-shadow: 4px 4px 15px rgba(0,0,0,0.2) !important;
-        cursor: pointer !important;
+        width: 60px !important; /* EŠTE VÄČŠIA */
+        height: 60px !important;
+        box-shadow: 0px 10px 30px rgba(0,0,0,0.5) !important; /* OBROVSKÝ TIEŇ */
     }
 
-    /* Keď je lišta OTVORENÁ, šípka sa posunie doprava, aby nezavadzala v menu */
-    section[data-testid="stSidebar"][aria-expanded="true"] + section [data-testid="collapsedControl"] {
-        left: 280px !important; /* Skočí za okraj otvorenej lišty */
-    }
-
-    /* Odstúpime obsah, aby šípka nič neprekrývala */
-    .block-container {
-        padding-top: 80px !important;
-        padding-left: 60px !important;
-    }
-
-    /* Červené tlačidlo */
+    /* Červené tlačidlo "Nový čet" */
     div.stButton > button {
         background-color: #ff4d4d !important;
         color: white !important;
         border-radius: 8px !important;
+        font-weight: bold !important;
+    }
+    
+    /* Posunieme text aplikácie, aby ho šípka nezakrývala */
+    .block-container {
+        padding-top: 100px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -63,9 +57,8 @@ with st.sidebar:
     if st.button("＋ Nový čet"):
         st.rerun()
     st.text_input("Hľadaj...", placeholder="Hľadaj...")
-    st.divider()
-    st.write("📁 💬 **AI Tutor**")
 
-# 4. Hlavná plocha
+# 4. Obsah
 st.title("🤖 AI Tutor")
-st.chat_input("S čím dnes pomôžem?")
+st.write("Ak túto červenú šípku vľavo hore nevidíš, skús vo Frameri zväčšiť ten Embed box.")
+st.chat_input("Skús mi niečo napísať...")
