@@ -1,15 +1,3 @@
-
-
-Prejsť na obsah
-Používanie služby Gmail s čítačkami obrazovky
-1 z 15
-(bez predmetu)
-Doručené
-
-daniela schultzova <schultzovad@gmail.com>
-14:12 (pred 2 minútami)
-komu: mne
-
 import streamlit as st
 import streamlit.components.v1 as components
 
