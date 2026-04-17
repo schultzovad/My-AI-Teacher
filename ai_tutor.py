@@ -3,18 +3,25 @@ import streamlit as st
 st.set_page_config(page_title="AI Tutor", layout="wide")
 
 lang_data = {
-    "SK": {"title": "🤖 AI Tutor", "input": "S čím ti dnes pomôžem?"},
-    "EN": {"title": "🤖 AI Tutor", "input": "How can I help you today?"},
-    "DE": {"title": "🤖 AI Tutor", "input": "Wie kann ich dir helfen?"},
-    "ES": {"title": "🤖 Tutor AI", "input": "¿Cómo te puedo ayudar?"},
-    "FR": {"title": "🤖 Tuteur IA", "input": "Comment puis-je vous aider ?"},
-    "IT": {"title": "🤖 Tutor IA", "input": "Come posso aiutarti?"},
-    "UA": {"title": "🤖 AI Тьютор", "input": "Чим я можу вам допомогти?"},
-    "RU": {"title": "🤖 AI Тьютор", "input": "Чем я могу вам помочь?"}
+    "SK": {"title": "🤖 AI Tutor", "input": "S čím ti dnes pomôžem?", "lang_label": "Vyber jazyk"},
+    "EN": {"title": "🤖 AI Tutor", "input": "How can I help you today?", "lang_label": "Select Language"},
+    "DE": {"title": "🤖 AI Tutor", "input": "Wie kann ich dir helfen?", "lang_label": "Sprache wählen"},
+    "ES": {"title": "🤖 Tutor AI", "input": "¿Cómo te puedo ayudar?", "lang_label": "Seleccionar idioma"},
+    "FR": {"title": "🤖 Tuteur IA", "input": "Comment puis-je vous aider ?", "lang_label": "Choisir la langue"},
+    "IT": {"title": "🤖 Tutor IA", "input": "Come posso aiutarti?", "lang_label": "Seleziona lingua"},
+    "UA": {"title": "🤖 AI Тьютор", "input": "Чим я можу вам допомогти?", "lang_label": "Оберіть мову"},
+    "RU": {"title": "🤖 AI Тьютор", "input": "Чем я могу вам помочь?", "lang_label": "Выберите язык"}
 }
 
-lang = st.sidebar.selectbox("Language / Jazyk", list(lang_data.keys()))
-t = lang_data[lang]
+# Najprv vytvoríme sidebar, aby sme vedeli, aký jazyk je vybraný
+# Použijeme dočasný kľúč, aby sme vedeli preložiť label
+if "temp_lang" not in st.session_state:
+    st.session_state.temp_lang = "SK"
+
+selected_lang = st.sidebar.selectbox("Language / Jazyk / Sprache", list(lang_data.keys()), index=list(lang_data.keys()).index(st.session_state.temp_lang))
+st.session_state.temp_lang = selected_lang
+
+t = lang_data[selected_lang]
 
 st.title(t["title"])
 
