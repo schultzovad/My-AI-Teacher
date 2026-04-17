@@ -3,25 +3,28 @@ import streamlit as st
 st.set_page_config(page_title="AI Tutor", layout="wide")
 
 lang_data = {
-    "SK": {"title": "🤖 AI Tutor", "input": "S čím ti dnes pomôžem?", "lang_label": "Vyber jazyk"},
-    "EN": {"title": "🤖 AI Tutor", "input": "How can I help you today?", "lang_label": "Select Language"},
-    "DE": {"title": "🤖 AI Tutor", "input": "Wie kann ich dir helfen?", "lang_label": "Sprache wählen"},
-    "ES": {"title": "🤖 Tutor AI", "input": "¿Cómo te puedo ayudar?", "lang_label": "Seleccionar idioma"},
-    "FR": {"title": "🤖 Tuteur IA", "input": "Comment puis-je vous aider ?", "lang_label": "Choisir la langue"},
-    "IT": {"title": "🤖 Tutor IA", "input": "Come posso aiutarti?", "lang_label": "Seleziona lingua"},
-    "UA": {"title": "🤖 AI Тьютор", "input": "Чим я можу вам допомогти?", "lang_label": "Оберіть мову"},
-    "RU": {"title": "🤖 AI Тьютор", "input": "Чем я могу вам помочь?", "lang_label": "Выберите язык"}
+    "SK": {"title": "🤖 AI Tutor", "input": "S čím ti dnes pomôžem?", "lang_sel": "Jazyk"},
+    "EN": {"title": "🤖 AI Tutor", "input": "How can I help you today?", "lang_sel": "Language"},
+    "DE": {"title": "🤖 AI Tutor", "input": "Wie kann ich dir helfen?", "lang_sel": "Sprache"},
+    "ES": {"title": "🤖 Tutor AI", "input": "¿Cómo te puedo ayudar?", "lang_label": "Idioma"},
+    "FR": {"title": "🤖 Tuteur IA", "input": "Comment puis-je vous aider ?", "lang_sel": "Langue"},
+    "IT": {"title": "🤖 Tutor IA", "input": "Come posso aiutarti?", "lang_sel": "Lingua"},
+    "UA": {"title": "🤖 AI Тьютор", "input": "Чим я можу vám допомогти?", "lang_sel": "Мова"},
+    "RU": {"title": "🤖 AI Тьютор", "input": "Чем я могу вам помочь?", "lang_sel": "Язык"}
 }
 
-# Najprv vytvoríme sidebar, aby sme vedeli, aký jazyk je vybraný
-# Použijeme dočasný kľúč, aby sme vedeli preložiť label
-if "temp_lang" not in st.session_state:
-    st.session_state.temp_lang = "SK"
+# Inicializácia jazyka v pamäti
+if "lang" not in st.session_state:
+    st.session_state.lang = "SK"
 
-selected_lang = st.sidebar.selectbox("Language / Jazyk / Sprache", list(lang_data.keys()), index=list(lang_data.keys()).index(st.session_state.temp_lang))
-st.session_state.temp_lang = selected_lang
+# Sidebar s dynamickým prekladom labelu
+st.session_state.lang = st.sidebar.selectbox(
+    lang_data[st.session_state.lang]["lang_sel"], 
+    list(lang_data.keys()), 
+    index=list(lang_data.keys()).index(st.session_state.lang)
+)
 
-t = lang_data[selected_lang]
+t = lang_data[st.session_state.lang]
 
 st.title(t["title"])
 
