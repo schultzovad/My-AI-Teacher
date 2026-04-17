@@ -26,7 +26,7 @@ with st.sidebar:
     # Domov tlačidlo
     if st.button(t["home"], use_container_width=True):
         # Tvoj link z Frameru
-        hlavna_adresa = "https://framer.com/projects/Silent-Terms--duObWFalxiZwL6zcYyE1-fWg3D?node=augiA20Il"
+        hlavna_adresa = "https://silent-terms-318372.framer.app/"
         js = f"window.parent.location.href = '{hlavna_adresa}';"
         components.html(f"<script>{js}</script>", height=0)
         st.query_params.clear()
