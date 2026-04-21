@@ -2,59 +2,60 @@ import streamlit as st
 import google.generativeai as genai
 import pypdf
 
-# 1. NASTAVENIE MODELU (Meno, ktoré nám zafungovalo)
+# 1. NASTAVENIE - tvoj overený kľúč a model
 try:
     api_key = st.secrets["tutor"]
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3-flash-preview')
+    # Používame ten model, ktorý ti v Playgrounde fungoval
+    moj_model = genai.GenerativeModel('gemini-3-flash-preview')
 except Exception as e:
-    st.error("Chyba API kľúča.")
+    st.error("Chyba API kľúča v Secrets!")
 
-# 2. DIZAJN A JAZYK
+# 2. DIZAJN
 st.set_page_config(page_title="AI Tutor", layout="wide")
 st.markdown("<style>header, footer {visibility: hidden;} .stAppDeployButton {display:none;}</style>", unsafe_allow_html=True)
 
 if "m" not in st.session_state: st.session_state.m = []
 if "pdf_text" not in st.session_state: st.session_state.pdf_text = ""
 
-# 3. CHAT INTERFACE
 st.title("🤖 AI Tutor")
 
-# Zobrazenie histórie správ
+# 3. ZOBRAZENIE ČATU (História)
 for m in st.session_state.m:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# 4. FIXNÁ ZÓNA PRE VSTUP (Súbor a Text pri sebe)
-with st.container():
-    st.write("---") # Čiara na oddelenie
-    # Nahrávanie súboru
-    u = st.file_uploader("Nahraj súbor (PDF)", type=['pdf'], label_visibility="collapsed")
-    
-    # Kontrola, či sa nahral nový súbor
-    if u and not st.session_state.pdf_text:
+# 4. SPODNÁ ZÓNA (Nahrávanie a písanie spolu)
+st.write("---")
+
+# Nahrávanie súboru (zostáva stále viditeľné nad chatom)
+u = st.file_uploader("Priložiť súbor (PDF)", type=['pdf'], label_visibility="collapsed")
+
+# Ak sa nahrá súbor, hneď ho spracujeme a AI odpovie
+if u and not st.session_state.pdf_text:
+    try:
         reader = pypdf.PdfReader(u)
         st.session_state.pdf_text = "".join([p.extract_text() for p in reader.pages])
         
-        # Automatické odoslanie informácie o súbore do chatu
-        pripomienka = "Nahral som súbor. Prosím, zosumarizuj mi ho alebo mi povedz, o čom je."
-        st.session_state.m.append({"role": "user", "content": "*(Odoslaný PDF dokument)*"})
-        
+        # AI hneď zareaguje na dokument
         with st.chat_message("assistant"):
-            kontext = f"Používateľ nahral tento text: {st.session_state.pdf_text}\n\nÚloha: Potvrď prijatie a stručne povedz, o čom je tento dokument."
-            response = model.generate_content(kontext)
-            st.markdown(response.text)
-            st.session_state.m.append({"role": "assistant", "content": response.text})
+            info_prompt = f"Používateľ nahral dokument s týmto obsahom: {st.session_state.pdf_text[:2000]}... Potvrď prijatie dokumentu a stručne (2 vetami) povedz, o čom je."
+            odpoved = moj_model.generate_content(info_prompt)
+            st.session_state.m.append({"role": "user", "content": "*(Odoslaný PDF súbor)*"})
+            st.session_state.m.append({"role": "assistant", "content": odpoved.text})
+            st.rerun() # Refreshne stránku, aby sa správa hneď ukázala
+    except:
+        st.error("Nepodarilo sa spracovať PDF.")
 
-    # Písanie textu
-    if p := st.chat_input("Napíš otázku..."):
-        st.session_state.m.append({"role": "user", "content": p})
-        with st.chat_message("user"):
-            st.markdown(p)
-        
-        with st.chat_message("assistant"):
-            # Ak máme v pamäti PDF, pošleme ho ako kontext
-            full_prompt = f"Kontext z dokumentu: {st.session_state.pdf_text}\n\nOtázka: {p}" if st.session_state.pdf_text else p
-            response = model.generate_content(full_prompt)
-            st.markdown(response.text)
-            st.session_state.m.append({"role": "assistant", "content": response.text})
+# Písanie textu
+if p := st.chat_input("Napíš otázku k dokumentu alebo len tak..."):
+    st.session_state.m.append({"role": "user", "content": p})
+    with st.chat_message("user"):
+        st.markdown(p)
+    
+    with st.chat_message("assistant"):
+        # Ak máme v pamäti PDF, pošleme ho ako kontext
+        finalny_prompt = f"Kontext z dokumentu: {st.session_state.pdf_text}\n\nOtázka: {p}" if st.session_state.pdf_text else p
+        odpoved = moj_model.generate_content(finalny_prompt)
+        st.markdown(odpoved.text)
+        st.session_state.m.append({"role": "assistant", "content": odpoved.text})
