@@ -6,7 +6,7 @@ import pypdf
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    model = genai.GenerativeModel('gemini-2.0-flash-exp')
 except Exception as e:
     st.error("Chyba: Kľúč v Secrets sa nenašiel alebo je nesprávny.")
 
