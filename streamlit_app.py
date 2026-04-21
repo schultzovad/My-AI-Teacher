@@ -2,14 +2,18 @@ import streamlit as st
 import google.generativeai as genai
 import pypdf
 
-# 1. NASTAVENIE - tvoj overený kľúč a model
-try:
-    api_key = st.secrets["tutor"]
-    genai.configure(api_key=api_key)
-    # Používame ten model, ktorý ti v Playgrounde fungoval
-    moj_model = genai.GenerativeModel('gemini-3-flash-preview')
-except Exception as e:
-    st.error("Chyba API kľúča v Secrets!")
+# 1. NASTAVENIE - Skúsime obidva názvy kľúča, aby sme sa trafili
+api_key = st.secrets.get("tutor") or st.secrets.get("GOOGLE_API_KEY")
+
+if not api_key:
+    st.error("Chyba: API kľúč sa nenašiel! Skontroluj Secrets v Streamlite.")
+else:
+    try:
+        genai.configure(api_key=api_key)
+        # Toto meno sme si overili v Playgrounde, že funguje
+        model_ai = genai.GenerativeModel('gemini-3-flash-preview')
+    except Exception as e:
+        st.error(f"Chyba pripojenia k AI: {e}")
 
 # 2. DIZAJN
 st.set_page_config(page_title="AI Tutor", layout="wide")
@@ -20,7 +24,7 @@ if "pdf_text" not in st.session_state: st.session_state.pdf_text = ""
 
 st.title("🤖 AI Tutor")
 
-# 3. ZOBRAZENIE ČATU (História)
+# 3. ZOBRAZENIE HISTÓRIE ČATU
 for m in st.session_state.m:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
@@ -28,10 +32,10 @@ for m in st.session_state.m:
 # 4. SPODNÁ ZÓNA (Nahrávanie a písanie spolu)
 st.write("---")
 
-# Nahrávanie súboru (zostáva stále viditeľné nad chatom)
-u = st.file_uploader("Priložiť súbor (PDF)", type=['pdf'], label_visibility="collapsed")
+# Nahrávanie súboru
+u = st.file_uploader("Priložiť PDF dokument", type=['pdf'], label_visibility="collapsed")
 
-# Ak sa nahrá súbor, hneď ho spracujeme a AI odpovie
+# Spracovanie súboru hneď po nahratí
 if u and not st.session_state.pdf_text:
     try:
         reader = pypdf.PdfReader(u)
@@ -39,23 +43,26 @@ if u and not st.session_state.pdf_text:
         
         # AI hneď zareaguje na dokument
         with st.chat_message("assistant"):
-            info_prompt = f"Používateľ nahral dokument s týmto obsahom: {st.session_state.pdf_text[:2000]}... Potvrď prijatie dokumentu a stručne (2 vetami) povedz, o čom je."
-            odpoved = moj_model.generate_content(info_prompt)
+            info_prompt = f"Používateľ nahral dokument. Tu je jeho obsah: {st.session_state.pdf_text[:2000]}. Krátko potvrď prijatie dokumentu a povedz, čo v ňom je."
+            odpoved = model_ai.generate_content(info_prompt)
             st.session_state.m.append({"role": "user", "content": "*(Odoslaný PDF súbor)*"})
             st.session_state.m.append({"role": "assistant", "content": odpoved.text})
-            st.rerun() # Refreshne stránku, aby sa správa hneď ukázala
-    except:
-        st.error("Nepodarilo sa spracovať PDF.")
+            st.rerun()
+    except Exception as e:
+        st.error(f"Nepodarilo sa spracovať PDF: {e}")
 
 # Písanie textu
-if p := st.chat_input("Napíš otázku k dokumentu alebo len tak..."):
+if p := st.chat_input("Napíš otázku k dokumentu..."):
     st.session_state.m.append({"role": "user", "content": p})
     with st.chat_message("user"):
         st.markdown(p)
     
     with st.chat_message("assistant"):
-        # Ak máme v pamäti PDF, pošleme ho ako kontext
-        finalny_prompt = f"Kontext z dokumentu: {st.session_state.pdf_text}\n\nOtázka: {p}" if st.session_state.pdf_text else p
-        odpoved = moj_model.generate_content(finalny_prompt)
-        st.markdown(odpoved.text)
-        st.session_state.m.append({"role": "assistant", "content": odpoved.text})
+        # Pošleme otázku spolu s textom z PDF (ak existuje)
+        finalny_prompt = f"Dokument: {st.session_state.pdf_text}\n\nOtázka: {p}" if st.session_state.pdf_text else p
+        try:
+            odpoved = model_ai.generate_content(finalny_prompt)
+            st.markdown(odpoved.text)
+            st.session_state.m.append({"role": "assistant", "content": odpoved.text})
+        except Exception as e:
+            st.error(f"AI teraz nemôže odpovedať: {e}")
