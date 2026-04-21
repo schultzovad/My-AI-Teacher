@@ -2,67 +2,70 @@ import streamlit as st
 import google.generativeai as genai
 import pypdf
 
-# 1. NASTAVENIE - Skúsime obidva názvy kľúča, aby sme sa trafili
+# 1. NASTAVENIE - Skúsime oba názvy kľúča
 api_key = st.secrets.get("tutor") or st.secrets.get("GOOGLE_API_KEY")
 
 if not api_key:
-    st.error("Chyba: API kľúč sa nenašiel! Skontroluj Secrets v Streamlite.")
-else:
-    try:
-        genai.configure(api_key=api_key)
-        # Toto meno sme si overili v Playgrounde, že funguje
-        model_ai = genai.GenerativeModel('gemini-3-flash-preview')
-    except Exception as e:
-        st.error(f"Chyba pripojenia k AI: {e}")
+    st.error("⚠️ API kľúč chýba! Skontroluj Secrets v Streamlit Cloud (Advanced Settings).")
+    st.stop()
+
+genai.configure(api_key=api_key)
+model_ai = genai.GenerativeModel('gemini-3-flash-preview')
 
 # 2. DIZAJN
 st.set_page_config(page_title="AI Tutor", layout="wide")
 st.markdown("<style>header, footer {visibility: hidden;} .stAppDeployButton {display:none;}</style>", unsafe_allow_html=True)
 
+# Inicializácia pamäte, ak ešte neexistuje
 if "m" not in st.session_state: st.session_state.m = []
-if "pdf_text" not in st.session_state: st.session_state.pdf_text = ""
+if "last_file" not in st.session_state: st.session_state.last_file = None
+if "pdf_content" not in st.session_state: st.session_state.pdf_content = ""
 
 st.title("🤖 AI Tutor")
 
-# 3. ZOBRAZENIE HISTÓRIE ČATU
+# 3. ZOBRAZENIE CHATU
 for m in st.session_state.m:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# 4. SPODNÁ ZÓNA (Nahrávanie a písanie spolu)
+# 4. NAHRÁVANIE SÚBORU (v spodnej časti)
 st.write("---")
+u = st.file_uploader("Priložiť PDF", type=['pdf'], label_visibility="collapsed")
 
-# Nahrávanie súboru
-u = st.file_uploader("Priložiť PDF dokument", type=['pdf'], label_visibility="collapsed")
-
-# Spracovanie súboru hneď po nahratí
-if u and not st.session_state.pdf_text:
+# Spracovanie súboru LEN ak je nový
+if u is not None and u.name != st.session_state.last_file:
     try:
         reader = pypdf.PdfReader(u)
-        st.session_state.pdf_text = "".join([p.extract_text() for p in reader.pages])
+        text = "".join([page.extract_text() for page in reader.pages]).strip()
         
-        # AI hneď zareaguje na dokument
-        with st.chat_message("assistant"):
-            info_prompt = f"Používateľ nahral dokument. Tu je jeho obsah: {st.session_state.pdf_text[:2000]}. Krátko potvrď prijatie dokumentu a povedz, čo v ňom je."
-            odpoved = model_ai.generate_content(info_prompt)
-            st.session_state.m.append({"role": "user", "content": "*(Odoslaný PDF súbor)*"})
-            st.session_state.m.append({"role": "assistant", "content": odpoved.text})
+        if text:
+            st.session_state.pdf_content = text
+            st.session_state.last_file = u.name
+            
+            # Pridáme info do chatu
+            st.session_state.m.append({"role": "user", "content": f"*(Nahraný súbor: {u.name})*"})
+            
+            with st.chat_message("assistant"):
+                res = model_ai.generate_content(f"Používateľ nahral súbor: {text[:2000]}. Krátko (1 veta) potvrď, že ho máš.")
+                st.markdown(res.text)
+                st.session_state.m.append({"role": "assistant", "content": res.text})
             st.rerun()
+        else:
+            st.warning("Súbor sa zdá byť prázdny alebo je to len obrázok.")
     except Exception as e:
-        st.error(f"Nepodarilo sa spracovať PDF: {e}")
+        st.error(f"Chyba PDF: {e}")
 
-# Písanie textu
+# 5. PÍSANIE OTÁZKY
 if p := st.chat_input("Napíš otázku k dokumentu..."):
     st.session_state.m.append({"role": "user", "content": p})
     with st.chat_message("user"):
         st.markdown(p)
     
     with st.chat_message("assistant"):
-        # Pošleme otázku spolu s textom z PDF (ak existuje)
-        finalny_prompt = f"Dokument: {st.session_state.pdf_text}\n\nOtázka: {p}" if st.session_state.pdf_text else p
+        full_p = f"Kontext z dokumentu: {st.session_state.pdf_content}\n\nOtázka: {p}" if st.session_state.pdf_content else p
         try:
-            odpoved = model_ai.generate_content(finalny_prompt)
-            st.markdown(odpoved.text)
-            st.session_state.m.append({"role": "assistant", "content": odpoved.text})
+            res = model_ai.generate_content(full_p)
+            st.markdown(res.text)
+            st.session_state.m.append({"role": "assistant", "content": res.text})
         except Exception as e:
-            st.error(f"AI teraz nemôže odpovedať: {e}")
+            st.error(f"AI Error: {e}")
