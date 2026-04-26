@@ -33,44 +33,38 @@ st.subheader(t["subjects"])
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    st.info("🧬 **Biológia**")
-    st.link_button("Otvoriť", "LINK_NA_TVOJ_PRIECINOK_BIOLOGIA", use_container_width=True)
-    
-    st.info("🏺 **Dejepis**")
-    st.link_button("Otvoriť", "LINK_NA_TVOJ_PRIECINOK_DEJEPIS", use_container_width=True)
+        st.info("🧬 **Biológia**")
+        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1HwEr80n2TnaAs7oyixCvcFWF5ZGKPjmf")
+        
+        st.info("🏺 **Dejepis**")
+        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk")
 
-with c2:
-    st.info("⚛️ **Fyzika**")
-    st.link_button("Otvoriť", "LINK_NA_TVOJ_PRIECINOK_FYZIKA", use_container_width=True)
-    
-    st.info("🧪 **Chémia**")
-    st.link_button("Otvoriť", "LINK_NA_TVOJ_PRIECINOK_CHEMIA", use_container_width=True)
+    with c2:
+        st.info("⚛️ **Fyzika**")
+        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS")
+        
+        st.info("🧪 **Chémia**")
+        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR")
 
-with c3:
-    st.info("📐 **Matematika**")
-    st.link_button("Otvoriť", "LINK_NA_TVOJ_PRIECINOK_MATEMATIKA", use_container_width=True)
-    
-    st.info("⚖️ **Občianska náuka**")
-    st.link_button("Otvoriť", "LINK_NA_TVOJ_PRIECINOK_OBCIANSKA", use_container_width=True)
+    with c3:
+        st.info("📐 **Matematika**")
+        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/16o7nKWMoIOk7b8m90tXbgA4L2NeZ9STm")
+        
+        st.info("⚖️ **Občianska náuka**")
+        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1kNvYlsNxa64IVyB-QLSXQ_8pC6oQzof_")
 
-st.write("")
-st.subheader(t["lang_sect"])
-
-# Rozdelenie na 4 stĺpce pre jazyky (podľa tvojej fotky)
-j1, j2, j3, j4 = st.columns(4)
-
-with j1:
-    st.link_button("🇸🇰 Slovenčina", "LINK_NA_SLOVENCINA", use_container_width=True)
-    st.link_button("🇬🇧 Angličtina", "LINK_NA_ANGLICTINA", use_container_width=True)
-
-with j2:
-    st.link_button("🇩🇪 Nemčina", "LINK_NA_NEMCINA", use_container_width=True)
-    st.link_button("🇫🇷 Francúzština", "LINK_NA_FRANCUZSTINA", use_container_width=True)
-
-with j3:
-    st.link_button("🇪🇸 Španielčina", "LINK_NA_SPANIELCINA", use_container_width=True)
-    st.link_button("🇮🇹 Taliančina", "LINK_NA_TALIANCINA", use_container_width=True)
-
-with j4:
-    st.link_button("🇷🇺 Ruština", "LINK_NA_RUSTINA", use_container_width=True)
-    st.link_button("🇺🇦 Ukrajinčina", "LINK_NA_UKRAJINCINA", use_container_width=True)
+    st.write("---")
+    st.subheader("🌍 Jazyky")
+    j1, j2, j3, j4 = st.columns(4)
+    with j1:
+        st.link_button("🇸🇰 Slovenčina", "https://drive.google.com/drive/u/1/folders/1GY8gyXFXGIXG3gL5cXBPOlbEjsqowpA-")
+        st.link_button("🇬🇧 Angličtina", "https://drive.google.com/drive/u/1/folders/1ffEMvwZA4zTCbcCLx3DqfAQYTmqt4fiB")
+    with j2:
+        st.link_button("🇩🇪 Nemčina", "https://drive.google.com/drive/u/1/folders/1rejCBuHI8qFm_y2Dr1zR9PtJnMJ9SkCI")
+        st.link_button("🇫🇷 Francúzština", "https://drive.google.com/drive/u/1/folders/1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j")
+    with j3:
+        st.link_button("🇪🇸 Španielčina", "https://drive.google.com/drive/u/1/folders/1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j")
+        st.link_button("🇮🇹 Taliančina", "https://drive.google.com/drive/u/1/folders/161jDX2VhvCpRIoPpY1FLIj08rp5chhp_")
+    with j4:
+        st.link_button("🇷🇺 Ruština", "https://drive.google.com/drive/u/1/folders/1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5")
+        st.link_button("🇺🇦 U
