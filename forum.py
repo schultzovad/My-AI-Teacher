@@ -7,12 +7,11 @@ st.markdown("""
     #MainMenu, footer, header {visibility: hidden;} 
     .stAppDeployButton {display:none;}
     iframe {border-radius: 15px; border: 1px solid #ddd; background-color: white;}
-    /* Pekné zaoblené tlačidlá */
     .stButton>button {border-radius: 10px; font-weight: 500;}
     </style>
 """, unsafe_allow_html=True)
 
-# 2. KOMPLETNÉ PREKLADY (8 JAZYKOV) - Čisté názvy
+# 2. KOMPLETNÉ PREKLADY (8 JAZYKOV)
 lang_data = {
     "SK": {
         "title": "📚 Študijné materiály", "up": "Nahraj svoje poznámky", "ok": "Súbor nahraný!",
@@ -31,7 +30,7 @@ lang_data = {
     },
     "ES": {
         "title": "📚 Materiales de estudio", "up": "Subir notas", "ok": "¡Archivo subido!",
-        "bio": "Biología", "dej": "Historia", "fyz": "Física", "che": "Química", "mat": "Matemáticas", "obn": "Cívica", "geo": "Geografía", "inf": "Informática",
+        "bio": "Biología", "dej": "Historia", "fyz": "Fisica", "che": "Química", "mat": "Matemáticas", "obn": "Cívica", "geo": "Geografía", "inf": "Informática",
         "sjl": "Eslovaco", "anj": "Inglés", "nej": "Alemán", "frj": "Francés", "esp": "Español", "itj": "Italiano", "ruj": "Ruso", "ukj": "Ucraniano"
     },
     "FR": {
@@ -52,14 +51,14 @@ lang_data = {
     "RU": {
         "title": "📚 Учебные материалы", "up": "Загрузить", "ok": "Загружено!",
         "bio": "Биология", "dej": "История", "fyz": "Физика", "che": "Химия", "mat": "Математика", "obn": "Обществознание", "geo": "География", "inf": "Информатика",
-        "sjl": "Словацкий", "anj": "Аnglijskij", "nej": "Nemeckij", "frj": "Francuzskij", "esp": "Ispanskij", "itj": "Italianskij", "ruj": "Russkij", "ukj": "Ukrainskij"
+        "sjl": "Словацкий", "anj": "Anglijskij", "nej": "Nemeckij", "frj": "Francuzskij", "esp": "Ispanskij", "itj": "Italianskij", "ruj": "Russkij", "ukj": "Ukrainskij"
     }
 }
 
 L = st.query_params.get("lang", "SK").upper()
 t = lang_data.get(L, lang_data["SK"])
 
-# 3. TVOJE ID PRIEČINKOV (Už vyplnené podľa tvojho zoznamu)
+# 3. TVOJE ID PRIEČINKOV
 ids = {
     "bio": "1HwEr80n2TnaAs7oyixCvcFWF5ZGKPjmf", "dej": "1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk", 
     "fyz": "1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS", "che": "1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR",
@@ -71,11 +70,9 @@ ids = {
     "ruj": "1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5", "ukj": "1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO"
 }
 
-# Inicializácia vybratého priečinka
 if "selected_folder" not in st.session_state:
     st.session_state.selected_folder = ids["bio"]
 
-# Funkcia na zmenu priečinka s automatickým scrollom
 def set_folder(folder_id):
     st.session_state.selected_folder = folder_id
     st.components.v1.html(
@@ -87,7 +84,7 @@ def set_folder(folder_id):
         height=0,
     )
 
-# 4. HLAVNÁ ČASŤ - TITULOK A UPLOADER
+# 4. HLAVNÁ ČASŤ
 st.title(t["title"])
 u = st.file_uploader(t["up"], type=['pdf', 'png', 'jpg'])
 if u: st.success(t["ok"])
@@ -126,10 +123,8 @@ with j4:
     if st.button(t["ukj"], use_container_width=True): set_folder(ids["ukj"])
 
 st.write("---")
-
-# Kotva pre automatický scroll
 st.markdown('<div id="pohlad-na-dokumenty"></div>', unsafe_allow_html=True)
 
-# 7. OKNO S DOKUMENTMI
+# 7. OKNO S DOKUMENTMI (Opravený riadok bez 'key')
 drive_url = f"https://drive.google.com/embeddedfolderview?id={st.session_state.selected_folder}#grid"
-st.components.v1.iframe(drive_url, height=650, scrolling=True, key=st.session_state.selected_folder)
+st.components.v1.iframe(drive_url, height=650, scrolling=True)
