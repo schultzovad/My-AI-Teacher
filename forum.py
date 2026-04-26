@@ -1,17 +1,18 @@
 import streamlit as st
 
-# 1. ZÁKLADNÉ NASTAVENIE
+# 1. NASTAVENIE STRÁNKY A ŠTÝLOV
 st.set_page_config(layout="wide")
 st.markdown("""
     <style>
     #MainMenu, footer, header {visibility: hidden;} 
     .stAppDeployButton {display:none;}
     iframe {border-radius: 15px; border: 1px solid #ddd; background-color: white;}
+    /* Pekné zaoblené tlačidlá s hrubším písmom */
     .stButton>button {border-radius: 10px; font-weight: 500;}
     </style>
 """, unsafe_allow_html=True)
 
-# 2. KOMPLETNÉ PREKLADY (8 JAZYKOV)
+# 2. KOMPLETNÉ PREKLADY (8 JAZYKOV) - Bez skratiek a vlajok
 lang_data = {
     "SK": {
         "title": "📚 Študijné materiály", "up": "Nahraj svoje poznámky", "ok": "Súbor nahraný!",
@@ -50,7 +51,7 @@ lang_data = {
     },
     "RU": {
         "title": "📚 Учебные материалы", "up": "Загрузить", "ok": "Загружено!",
-        "bio": "Биология", "che": "Химия", "dej": "История", "fyz": "Физика", "che": "Химия", "mat": "Математика", "obn": "Обществознание", "geo": "География", "inf": "Информатика",
+        "bio": "Биология", "dej": "История", "fyz": "Физика", "che": "Химия", "mat": "Математика", "obn": "Обществознание", "geo": "География", "inf": "Информатика",
         "sjl": "Словацкий", "anj": "Английский", "nej": "Немецкий", "frj": "Французский", "esp": "Испанский", "itj": "Итальянский", "ruj": "Русский", "ukj": "Украинский"
     }
 }
@@ -58,7 +59,7 @@ lang_data = {
 L = st.query_params.get("lang", "SK").upper()
 t = lang_data.get(L, lang_data["SK"])
 
-# 3. ID PRIEČINKOV (Nezabudni doplniť svoje ID z Drive!)
+# 3. TVOJE ID PRIEČINKOV
 ids = {
     "bio": "1HwEr80n2TnaAs7oyixCvcFWF5ZGKPjmf", "dej": "1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk", "fyz": "1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS", "che": "1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR",
     "mat": "16o7nKWMoIOk7b8m90tXbgA4L2NeZ9STm", "obn": "1kNvYlsNxa64IVyB-QLSXQ_8pC6oQzof_", "geo": "1D7Zn_c3qn18aH5i_GrcxYawxZRoFzbN2", "inf": "1eg0Oq3w-3nDJ9EschjWPLGY2anrv6P7u",
@@ -66,13 +67,14 @@ ids = {
     "esp": "1ZGTJ3xtPY0nQ5blLiAZ-WcXE5DVzhm68", "itj": "161jDX2VhvCpRIoPpY1FLIj08rp5chhp_", "ruj": "1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5", "ukj": "1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO"
 }
 
+# Zapamätanie vybratého priečinka
 if "selected_folder" not in st.session_state:
     st.session_state.selected_folder = ids["bio"]
 
 def set_folder(folder_id):
     st.session_state.selected_folder = folder_id
 
-# 4. UI - TITULOK A UPLOADER
+# 4. HLAVNÁ ČASŤ - TITULOK A UPLOADER
 st.title(t["title"])
 u = st.file_uploader(t["up"], type=['pdf', 'png', 'jpg'])
 if u: st.success(t["ok"])
@@ -94,7 +96,7 @@ with c4:
     if st.button(t["geo"], use_container_width=True): set_folder(ids["geo"])
     if st.button(t["inf"], use_container_width=True): set_folder(ids["inf"])
 
-# 6. TLAČIDLÁ JAZYKOV (Bez skratiek a vlajok, len čisté slová)
+# 6. TLAČIDLÁ JAZYKOV
 st.write("---")
 j1, j2, j3, j4 = st.columns(4)
 with j1:
