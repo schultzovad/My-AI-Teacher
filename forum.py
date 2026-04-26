@@ -67,4 +67,4 @@ with c1:
         st.link_button("🇮🇹 Taliančina", "https://drive.google.com/drive/u/1/folders/161jDX2VhvCpRIoPpY1FLIj08rp5chhp_")
     with j4:
         st.link_button("🇷🇺 Ruština", "https://drive.google.com/drive/u/1/folders/1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5")
-        st.link_button("🇺🇦 U
+        st.link_button("🇺🇦 Ukrajinčina", "https://drive.google.com/drive/u/1/folders/1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO")
