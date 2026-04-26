@@ -60,10 +60,10 @@ t = lang_data.get(L, lang_data["SK"])
 
 # 3. ID PRIEČINKOV (Nezabudni doplniť svoje ID z Drive!)
 ids = {
-    "bio": "ID_BIOLOGIA", "dej": "ID_DEJEPIS", "fyz": "ID_FYZIKA", "che": "ID_CHEMIA",
-    "mat": "ID_MATEMATIKA", "obn": "ID_OBCIANSKA", "geo": "ID_GEOGRAFIA", "inf": "ID_INFORMATIKA",
-    "sjl": "ID_SLOVENCINA", "anj": "ID_ANGLICTINA", "nej": "ID_NEMCINA", "frj": "ID_FRANCUZSTINA",
-    "esp": "ID_SPANIELCINA", "itj": "ID_TALIANCINA", "ruj": "ID_RUSTINA", "ukj": "ID_UKRAJINCINA"
+    "bio": "1HwEr80n2TnaAs7oyixCvcFWF5ZGKPjmf", "dej": "1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk", "fyz": "1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS", "che": "1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR",
+    "mat": "16o7nKWMoIOk7b8m90tXbgA4L2NeZ9STm", "obn": "1kNvYlsNxa64IVyB-QLSXQ_8pC6oQzof_", "geo": "1D7Zn_c3qn18aH5i_GrcxYawxZRoFzbN2", "inf": "1eg0Oq3w-3nDJ9EschjWPLGY2anrv6P7u",
+    "sjl": "1GY8gyXFXGIXG3gL5cXBPOlbEjsqowpA-", "anj": "1ffEMvwZA4zTCbcCLx3DqfAQYTmqt4fiB", "nej": "1rejCBuHI8qFm_y2Dr1zR9PtJnMJ9SkCI", "frj": "1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j",
+    "esp": "1ZGTJ3xtPY0nQ5blLiAZ-WcXE5DVzhm68", "itj": "161jDX2VhvCpRIoPpY1FLIj08rp5chhp_", "ruj": "1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5", "ukj": "1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO"
 }
 
 if "selected_folder" not in st.session_state:
