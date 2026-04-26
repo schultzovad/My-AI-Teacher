@@ -10,29 +10,29 @@ if not api_key:
     st.stop()
 
 genai.configure(api_key=api_key)
-model_ai = genai.GenerativeModel('gemini-1.5-flash')
+model_ai = genai.GenerativeModel('gemini-3-flash-preview')
 
 # --- INICIALIZÁCIA ---
 if "m" not in st.session_state: st.session_state.m = []
 if "doc_content" not in st.session_state: st.session_state.doc_content = ""
 
-# 2. JAZYKOVÁ LOGIKA (Podpora pre všetky tvoje predmety)
+# 2. JAZYKOVÁ LOGIKA
 query_params = st.query_params
 jazyk = query_params.get("lang", "SK").upper()
 
 texty = {
-    "SK": {
-        "title": "🤖 AI Tutor", "lib": "📚 Knižnica", "menu": "Menu", 
-        "nav_chat": "🤖 AI Tutor", "nav_lib": "📚 Študijné materiály",
-        "selected": "Vybraný súbor:", "send_file": "Odoslať ⬆️", "input": "Napíš otázku...",
-        "file_msg": "*(Súbor: {name})*", "sys_prompt": "Odpovedaj výhradne v slovenskom jazyku.",
-        "lib_desc": "Vyber si predmet a nájdi potrebné poznámky:"
-    }
-    # ... (ostatné jazyky EN, FR, DE, IT, ES, UA, RU sa doplnia automaticky podľa predošlého vzoru)
+    "SK": {"title": "🤖 AI Tutor", "selected": "Vybraný súbor:", "send_file": "Odoslať ⬆️", "input": "Napíš otázku...", "file_msg": "*(Súbor: {name})*", "sys_prompt": "Odpovedaj výhradne v slovenskom jazyku."},
+    "EN": {"title": "🤖 AI Tutor", "selected": "Selected file:", "send_file": "Send ⬆️", "input": "Ask a question...", "file_msg": "*(File: {name})*", "sys_prompt": "Answer exclusively in English."},
+    "DE": {"title": "🤖 KI-Tutor", "selected": "Ausgewählte Datei:", "send_file": "Senden ⬆️", "input": "Frage stellen...", "file_msg": "*(Datei: {name})*", "sys_prompt": "Antworten Sie na Deutsch."},
+    "IT": {"title": "🤖 Tutor IA", "selected": "File selezionato:", "send_file": "Invia ⬆️", "input": "Fai una domanda...", "file_msg": "*(File: {name})*", "sys_prompt": "Rispondi in italiano."},
+    "ES": {"title": "🤖 Tutor IA", "selected": "Archivo seleccionado:", "send_file": "Enviar ⬆️", "input": "Preguntar...", "file_msg": "*(Archivo: {name})*", "sys_prompt": "Responde en español."},
+    "FR": {"title": "🤖 Tuteur IA", "selected": "Fichier sélectionné:", "send_file": "Envoyer ⬆️", "input": "Question...", "file_msg": "*(Fichier: {name})*", "sys_prompt": "Répondez en français."},
+    "UA": {"title": "🤖 AI Тьютор", "selected": "Вибраний файл:", "send_file": "Надіслати ⬆️", "input": "Запитати...", "file_msg": "*(Файл: {name})*", "sys_prompt": "Відповідайте українською."},
+    "RU": {"title": "🤖 AI Тьютор", "selected": "Выбранный файл:", "send_file": "Отправить ⬆️", "input": "Спросить...", "file_msg": "*(Файл: {name})*", "sys_prompt": "Отвечайте на русском."}
 }
 T = texty.get(jazyk, texty["SK"])
 
-# 3. DIZAJN + CSS (Očistený uploader podľa tvojich požiadaviek)
+# 3. DIZAJN + CSS (TOTÁLNA OČISTA)
 st.set_page_config(page_title=T["title"], layout="wide")
 
 st.markdown(f"""
@@ -40,6 +40,7 @@ st.markdown(f"""
     header, footer {{visibility: hidden;}} 
     .stAppDeployButton {{display:none;}}
     
+    /* 1. Štíhla lišta pre uploader */
     div[data-testid="stFileUploader"] section {{
         display: flex;
         flex-direction: row;
@@ -47,11 +48,14 @@ st.markdown(f"""
         justify-content: center;
         padding: 0 !important;
         min-height: 45px !important;
+        height: 45px !important;
         border: 1px solid #eee;
         border-radius: 8px;
         background-color: #fafafa;
+        overflow: hidden;
     }}
 
+    /* 2. Biele tlačidlo so šípkou */
     div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
         width: 40px !important;
         height: 30px !important;
@@ -62,87 +66,90 @@ st.markdown(f"""
         display: flex;
         align-items: center;
         justify-content: center;
+        margin: 0 !important;
+        padding: 0 !important;
     }}
 
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] svg {{
+        fill: #333 !important;
+        width: 18px;
+        height: 18px;
+        position: absolute;
+    }}
+
+    /* 3. TU JE TO: Úplné odstránenie nápisu 'Nahrať (200MB...)' */
     div[data-testid="stFileUploader"] section::after,
     div[data-testid="stFileUploader"] section::before,
     div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p,
     div[data-testid="stFileUploader"] label {{
         display: none !important;
+        content: "" !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+    }}
+    
+    /* Skrytie systémových prvkov pod boxom */
+    div[data-testid="stFileUploader"] section + div {{
+        display: none !important;
     }}
     </style>
 """, unsafe_allow_html=True)
 
-# 4. BOČNÉ MENU
-with st.sidebar:
-    st.title(T["menu"])
-    volba = st.sidebar.radio("Navigácia", [T["nav_chat"], T["nav_lib"]], label_visibility="collapsed")
+# 4. TITULOK
+st.title(T["title"])
 
-# --- SEKCIJA 1: CHAT ---
-if volba == T["nav_chat"]:
-    st.title(T["title"])
-    
-    chat_container = st.container()
+# 5. CHAT AREA
+chat_container = st.container()
+with chat_container:
+    for m in st.session_state.m:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+
+st.write("---")
+
+# 6. SPODNÝ PANEL (Uploader a vstup)
+with st.container():
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        u = st.file_uploader("uploader", type=['pdf', 'docx'], label_visibility="collapsed")
+        # Zobrazenie indikátora len keď je niečo vybraté
+        if u is not None:
+            st.info(f"📄 **{T['selected']}** {u.name}")
+            
+    with col2:
+        if st.button(T["send_file"], use_container_width=True):
+            if u:
+                try:
+                    text = ""
+                    if u.name.endswith('.pdf'):
+                        text = "".join([p.extract_text() for p in pypdf.PdfReader(u).pages])
+                    else:
+                        text = "\n".join([para.text for para in docx.Document(u).paragraphs])
+                    
+                    if text.strip():
+                        st.session_state.doc_content = text
+                        st.session_state.m.append({"role": "user", "content": T["file_msg"].format(name=u.name)})
+                        with chat_container:
+                            with st.chat_message("assistant"):
+                                res = model_ai.generate_content(f"{T['sys_prompt']} Potvrď prijatie dokumentu {u.name}.")
+                                st.markdown(res.text)
+                                st.session_state.m.append({"role": "assistant", "content": res.text})
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+if p := st.chat_input(T["input"]):
+    st.session_state.m.append({"role": "user", "content": p})
     with chat_container:
-        for m in st.session_state.m:
-            with st.chat_message(m["role"]):
-                st.markdown(m["content"])
-
-    with st.container():
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            u = st.file_uploader("up", type=['pdf', 'docx'], label_visibility="collapsed")
-            if u: st.info(f"📄 **{T['selected']}** {u.name}")
-        with col2:
-            if st.button(T["send_file"], use_container_width=True):
-                # (Logika spracovania súboru zostáva rovnaká)
-                pass
-
-    if p := st.chat_input(T["input"]):
-        # (Logika AI četu)
-        pass
-
-# --- SEKCIJA 2: KNIŽNICA (Podľa tvojich priečinkov na Drive) ---
-else:
-    st.title(T["nav_lib"])
-    st.write(T["lib_desc"])
-    
-    # Rozdelenie predmetov do stĺpcov podľa snímky obrazovky
-    c1, c2, c3 = st.columns(3)
-    
-    with c1:
-        st.info("🧬 **Biológia**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1HwEr80n2TnaAs7oyixCvcFWF5ZGKPjmf")
-        
-        st.info("🏺 **Dejepis**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk")
-
-    with c2:
-        st.info("⚛️ **Fyzika**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS")
-        
-        st.info("🧪 **Chémia**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR")
-
-    with c3:
-        st.info("📐 **Matematika**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/16o7nKWMoIOk7b8m90tXbgA4L2NeZ9STm")
-        
-        st.info("⚖️ **Občianska náuka**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1kNvYlsNxa64IVyB-QLSXQ_8pC6oQzof_")
-
-    st.write("---")
-    st.subheader("🌍 Jazyky")
-    j1, j2, j3, j4 = st.columns(4)
-    with j1:
-        st.link_button("🇸🇰 Slovenčina", "https://drive.google.com/drive/u/1/folders/1GY8gyXFXGIXG3gL5cXBPOlbEjsqowpA-")
-        st.link_button("🇬🇧 Angličtina", "https://drive.google.com/drive/u/1/folders/1ffEMvwZA4zTCbcCLx3DqfAQYTmqt4fiB")
-    with j2:
-        st.link_button("🇩🇪 Nemčina", "https://drive.google.com/drive/u/1/folders/1rejCBuHI8qFm_y2Dr1zR9PtJnMJ9SkCI")
-        st.link_button("🇫🇷 Francúzština", "https://drive.google.com/drive/u/1/folders/1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j")
-    with j3:
-        st.link_button("🇪🇸 Španielčina", "https://drive.google.com/drive/u/1/folders/1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j")
-        st.link_button("🇮🇹 Taliančina", "https://drive.google.com/drive/u/1/folders/161jDX2VhvCpRIoPpY1FLIj08rp5chhp_")
-    with j4:
-        st.link_button("🇷🇺 Ruština", "https://drive.google.com/drive/u/1/folders/1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5")
-        st.link_button("🇺🇦 Ukrajinčina", "https://drive.google.com/drive/u/1/folders/1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO")
+        with st.chat_message("user"):
+            st.markdown(p)
+        with st.chat_message("assistant"):
+            full_prompt = f"{T['sys_prompt']}\n\nKontext: {st.session_state.doc_content}\n\nOtázka: {p}"
+            try:
+                res = model_ai.generate_content(full_prompt)
+                st.markdown(res.text)
+                st.session_state.m.append({"role": "assistant", "content": res.text})
+            except Exception as e:
+                st.error(f"AI Error: {e}")
