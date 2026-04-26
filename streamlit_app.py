@@ -70,30 +70,32 @@ with spodny_panel:
     u = st.file_uploader(T["upload"], type=['pdf'], label_visibility="collapsed")
     p = st.chat_input(T["input"])
 
-# 6. LOGIKA SÚBORU (Spracuje sa hneď po nahratí)
-if u is not None and u.name != st.session_state.last_file:
-    try:
-        reader = pypdf.PdfReader(u)
-        raw_text = "".join([page.extract_text() for page in reader.pages]).strip()
-        
-        if raw_text:
-            st.session_state.pdf_content = raw_text
-            st.session_state.last_file = u.name
+# 6. LOGIKA SÚBORU (Upravená verzia)
+if u is not None:
+    if u.name != st.session_state.last_file:
+        try:
+            reader = pypdf.PdfReader(u)
+            raw_text = "".join([page.extract_text() for page in reader.pages]).strip()
             
-            # Pridáme záznam o súbore do čatu
-            st.session_state.m.append({"role": "user", "content": T["file_msg"].format(name=u.name)})
+            if raw_text:
+                st.session_state.pdf_content = raw_text
+                st.session_state.last_file = u.name
+                
+                # Oznámenie o úspešnom načítaní
+                st.success(f"✅ {u.name} načítaný!")
+                
+                # Automatická reakcia AI
+                if not st.session_state.m or st.session_state.m[-1].get("content") != T["file_msg"].format(name=u.name):
+                    st.session_state.m.append({"role": "user", "content": T["file_msg"].format(name=u.name)})
+                    with chat_container:
+                        with st.chat_message("assistant"):
+                            res = model_ai.generate_content(f"Potvrď v jazyku {jazyk}, že si prijal dokument s názvom {u.name} a krátko ho zhrň.")
+                            st.markdown(res.text)
+                            st.session_state.m.append({"role": "assistant", "content": res.text})
+                    st.rerun()
+        except Exception as e:
+            st.error(f"Chyba: {e}")
             
-            with chat_container:
-                with st.chat_message("assistant"):
-                    # Krátka AI reakcia na nový súbor
-                    prompt_intro = f"System: User uploaded a document. Context: {raw_text[:500]}. Respond in {jazyk} briefly: {T['ai_confirm']}"
-                    res = model_ai.generate_content(prompt_intro)
-                    st.markdown(res.text)
-                    st.session_state.m.append({"role": "assistant", "content": res.text})
-            st.rerun()
-    except Exception as e:
-        st.error(f"{T['error_pdf']}: {e}")
-
 # 7. LOGIKA OTÁZOK
 if p:
     st.session_state.m.append({"role": "user", "content": p})
