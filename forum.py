@@ -75,7 +75,7 @@ st.write("---")
 # 4. EMBED GOOGLE DRIVE (Okno priamo v stránke)
 # DÔLEŽITÉ: Tu nahraď ID tvojho hlavného priečinka "Study materials"
 # Získaš ho z URL adresy priečinka (to dlhé za /folders/)
-FOLDER_ID = "1abc123_SEM_VLOZ_SVOJE_ID" 
+FOLDER_ID = "1GSRDyiiiv7Rk_pggaYhtU9hmAMDW8uvy" 
 
 st.subheader(t["subj_list"])
 
