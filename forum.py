@@ -8,51 +8,25 @@ st.markdown("""
     .stAppDeployButton {display:none;}
     iframe {border-radius: 15px; border: 1px solid #ddd; background-color: white;}
     .stButton>button {border-radius: 10px; font-weight: 500;}
+    /* Špeciálny štýl pre nahrávacie tlačidlo aby svietilo */
+    div.stButton > button:first-child {
+        background-color: #ff4b4b;
+        color: white;
+        border: none;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # 2. KOMPLETNÉ PREKLADY (8 JAZYKOV)
 lang_data = {
-    "SK": {
-        "title": "📚 Študijné materiály", "up": "Nahraj svoje poznámky", "ok": "Súbor nahraný!",
-        "bio": "Biológia", "dej": "Dejepis", "fyz": "Fyzika", "che": "Chémia", "mat": "Matematika", "obn": "Občianska náuka", "geo": "Geografia", "inf": "Informatika",
-        "sjl": "Slovenčina", "anj": "Angličtina", "nej": "Nemčina", "frj": "Francúzština", "esp": "Španielčina", "itj": "Taliančina", "ruj": "Ruština", "ukj": "Ukrajinčina"
-    },
-    "EN": {
-        "title": "📚 Study Materials", "up": "Upload your notes", "ok": "File uploaded!",
-        "bio": "Biology", "dej": "History", "fyz": "Physics", "che": "Chemistry", "mat": "Mathematics", "obn": "Civics", "geo": "Geography", "inf": "Informatics",
-        "sjl": "Slovak", "anj": "English", "nej": "German", "frj": "French", "esp": "Spanish", "itj": "Italian", "ruj": "Russian", "ukj": "Ukrainian"
-    },
-    "DE": {
-        "title": "📚 Lernmaterialien", "up": "Notizen hochladen", "ok": "Datei hochgeladen!",
-        "bio": "Biologie", "dej": "Geschichte", "fyz": "Physik", "che": "Chemie", "mat": "Mathematik", "obn": "Sozialkunde", "geo": "Geographie", "inf": "Informatik",
-        "sjl": "Slowakisch", "anj": "Englisch", "nej": "Deutsch", "frj": "Französisch", "esp": "Spanisch", "itj": "Italienisch", "ruj": "Russisch", "ukj": "Ukrainisch"
-    },
-    "ES": {
-        "title": "📚 Materiales de estudio", "up": "Subir notas", "ok": "¡Archivo subido!",
-        "bio": "Biología", "dej": "Historia", "fyz": "Fisica", "che": "Química", "mat": "Matemáticas", "obn": "Cívica", "geo": "Geografía", "inf": "Informática",
-        "sjl": "Eslovaco", "anj": "Inglés", "nej": "Alemán", "frj": "Francés", "esp": "Español", "itj": "Italiano", "ruj": "Ruso", "ukj": "Ucraniano"
-    },
-    "FR": {
-        "title": "📚 Matériels d'étude", "up": "Télécharger", "ok": "Téléchargé !",
-        "bio": "Biologie", "dej": "Histoire", "fyz": "Physique", "che": "Chimie", "mat": "Mathématiques", "obn": "Éducation civique", "geo": "Géographie", "inf": "Informatique",
-        "sjl": "Slovaque", "anj": "Anglais", "nej": "Allemand", "frj": "Français", "esp": "Espagnol", "itj": "Italien", "ruj": "Russe", "ukj": "Ukrainien"
-    },
-    "IT": {
-        "title": "📚 Materiali di studio", "up": "Carica", "ok": "Caricato!",
-        "bio": "Biologia", "dej": "Storia", "fyz": "Fisica", "che": "Chimica", "mat": "Matematica", "obn": "Educazione civica", "geo": "Geografia", "inf": "Informatica",
-        "sjl": "Slovacco", "anj": "Inglese", "nej": "Tedesco", "frj": "Francese", "esp": "Spagnolo", "itj": "Italiano", "ruj": "Russo", "ukj": "Ucraino"
-    },
-    "UA": {
-        "title": "📚 Навчальні матеріали", "up": "Завантажити", "ok": "Завантажено!",
-        "bio": "Біологія", "che": "Хімія", "dej": "Історія", "fyz": "Фізика", "mat": "Математика", "obn": "Правознавство", "geo": "Географія", "inf": "Інформатика",
-        "sjl": "Словацька", "anj": "Англійська", "nej": "Німецька", "frj": "Французька", "esp": "Іспанська", "itj": "Італійська", "ruj": "Російська", "ukj": "Українська"
-    },
-    "RU": {
-        "title": "📚 Учебные материалы", "up": "Загрузить", "ok": "Загружено!",
-        "bio": "Биология", "dej": "История", "fyz": "Физика", "che": "Химия", "mat": "Математика", "obn": "Обществознание", "geo": "География", "inf": "Информатика",
-        "sjl": "Словацкий", "anj": "Anglijskij", "nej": "Nemeckij", "frj": "Francuzskij", "esp": "Ispanskij", "itj": "Italianskij", "ruj": "Russkij", "ukj": "Ukrainskij"
-    }
+    "SK": {"title": "📚 Študijné materiály", "up": "Nahraj svoje poznámky (Formulár)", "ok": "Súbor nahraný!", "bio": "Biológia", "dej": "Dejepis", "fyz": "Fyzika", "che": "Chémia", "mat": "Matematika", "obn": "Občianska náuka", "geo": "Geografia", "inf": "Informatika", "sjl": "Slovenčina", "anj": "Angličtina", "nej": "Nemčina", "frj": "Francúzština", "esp": "Španielčina", "itj": "Taliančina", "ruj": "Ruština", "ukj": "Ukrajinčina"},
+    "EN": {"title": "📚 Study Materials", "up": "Upload your notes (Form)", "ok": "File uploaded!", "bio": "Biology", "dej": "History", "fyz": "Physics", "che": "Chemistry", "mat": "Mathematics", "obn": "Civics", "geo": "Geography", "inf": "Informatics", "sjl": "Slovak", "anj": "English", "nej": "German", "frj": "French", "esp": "Spanish", "itj": "Italian", "ruj": "Russian", "ukj": "Ukrainian"},
+    "DE": {"title": "📚 Lernmaterialien", "up": "Notizen hochladen", "ok": "Datei hochgeladen!", "bio": "Biologie", "dej": "Geschichte", "fyz": "Physik", "che": "Chemie", "mat": "Mathematik", "obn": "Sozialkunde", "geo": "Geographie", "inf": "Informatik", "sjl": "Slowakisch", "anj": "Englisch", "nej": "Deutsch", "frj": "Französisch", "esp": "Spanisch", "itj": "Italienisch", "ruj": "Russisch", "ukj": "Ukrainisch"},
+    "ES": {"title": "📚 Materiales de estudio", "up": "Subir notas", "ok": "¡Archivo subido!", "bio": "Biología", "dej": "Historia", "fyz": "Fisica", "che": "Química", "mat": "Matemáticas", "obn": "Cívica", "geo": "Geografía", "inf": "Informática", "sjl": "Eslovaco", "anj": "Inglés", "nej": "Alemán", "frj": "Francés", "esp": "Español", "itj": "Italiano", "ruj": "Ruso", "ukj": "Ucraniano"},
+    "FR": {"title": "📚 Matériels d'étude", "up": "Télécharger", "ok": "Téléchargé !", "bio": "Biologie", "dej": "Histoire", "fyz": "Physique", "che": "Chimie", "mat": "Mathématiques", "obn": "Éducation civique", "geo": "Géographie", "inf": "Informatique", "sjl": "Slovaque", "anj": "Anglais", "nej": "Allemand", "frj": "Français", "esp": "Espagnol", "itj": "Italien", "ruj": "Russe", "ukj": "Ukrainien"},
+    "IT": {"title": "📚 Materiali di studio", "up": "Carica", "ok": "Caricato!", "bio": "Biologia", "dej": "Storia", "fyz": "Fisica", "che": "Chimica", "mat": "Matematica", "obn": "Educazione civica", "geo": "Geografia", "inf": "Informatica", "sjl": "Slovacco", "anj": "Inglese", "nej": "Tedesco", "frj": "Francese", "esp": "Spagnolo", "itj": "Italiano", "ruj": "Russo", "ukj": "Ucraino"},
+    "UA": {"title": "📚 Навчальні матеріали", "up": "Завантажити", "ok": "Завантажено!", "bio": "Біологія", "che": "Хімія", "dej": "Історія", "fyz": "Фізика", "mat": "Математика", "obn": "Правознавство", "geo": "Географія", "inf": "Інформатика", "sjl": "Словацька", "anj": "Англійська", "nej": "Німецька", "frj": "Французька", "esp": "Іспанська", "itj": "Італійська", "ruj": "Російська", "ukj": "Українська"},
+    "RU": {"title": "📚 Учебные материалы", "up": "Загрузить", "ok": "Загружено!", "bio": "Биология", "dej": "История", "fyz": "Физика", "che": "Химия", "mat": "Математика", "obn": "Обществознание", "geo": "География", "inf": "Informatica", "sjl": "Slovackij", "anj": "Anglijskij", "nej": "Nemeckij", "frj": "Francuzskij", "esp": "Ispanskij", "itj": "Italianskij", "ruj": "Russkij", "ukj": "Ukrainskij"}
 }
 
 L = st.query_params.get("lang", "SK").upper()
@@ -75,19 +49,18 @@ if "selected_folder" not in st.session_state:
 
 def set_folder(folder_id):
     st.session_state.selected_folder = folder_id
-    st.components.v1.html(
-        f"""
-        <script>
-            window.parent.document.getElementById('pohlad-na-dokumenty').scrollIntoView({{behavior: 'smooth'}});
-        </script>
-        """,
-        height=0,
-    )
+    st.components.v1.html(f"<script>window.parent.document.getElementById('pohlad-na-dokumenty').scrollIntoView({{behavior: 'smooth'}});</script>", height=0)
 
-# 4. HLAVNÁ ČASŤ
+# 4. HLAVNÁ ČASŤ - TITULOK A NOVÉ TLAČIDLO NA NAHRÁVANIE
 st.title(t["title"])
-u = st.file_uploader(t["up"], type=['pdf', 'png', 'jpg'])
-if u: st.success(t["ok"])
+
+# TU VLOŽ SVOJ LINK NA GOOGLE FORMULÁR
+moj_formular_link = "https://forms.gle/jaLuPVnRvmEX2nteA"
+
+if moj_formular_link != "TU_VLOZ_SVOJ_LINK_NA_FORMULAR":
+    st.link_button(t["up"], moj_formular_link, use_container_width=True)
+else:
+    st.warning("Ešte nie je nastavený link na formulár.")
 
 st.write("---")
 
@@ -125,6 +98,6 @@ with j4:
 st.write("---")
 st.markdown('<div id="pohlad-na-dokumenty"></div>', unsafe_allow_html=True)
 
-# 7. OKNO S DOKUMENTMI (Opravený riadok bez 'key')
+# 7. OKNO S DOKUMENTMI
 drive_url = f"https://drive.google.com/embeddedfolderview?id={st.session_state.selected_folder}#grid"
 st.components.v1.iframe(drive_url, height=650, scrolling=True)
