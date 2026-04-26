@@ -7,12 +7,12 @@ st.markdown("""
     #MainMenu, footer, header {visibility: hidden;} 
     .stAppDeployButton {display:none;}
     iframe {border-radius: 15px; border: 1px solid #ddd; background-color: white;}
-    /* Pekné zaoblené tlačidlá s hrubším písmom */
+    /* Pekné zaoblené tlačidlá */
     .stButton>button {border-radius: 10px; font-weight: 500;}
     </style>
 """, unsafe_allow_html=True)
 
-# 2. KOMPLETNÉ PREKLADY (8 JAZYKOV) - Bez skratiek a vlajok
+# 2. KOMPLETNÉ PREKLADY (8 JAZYKOV) - Čisté názvy
 lang_data = {
     "SK": {
         "title": "📚 Študijné materiály", "up": "Nahraj svoje poznámky", "ok": "Súbor nahraný!",
@@ -52,27 +52,40 @@ lang_data = {
     "RU": {
         "title": "📚 Учебные материалы", "up": "Загрузить", "ok": "Загружено!",
         "bio": "Биология", "dej": "История", "fyz": "Физика", "che": "Химия", "mat": "Математика", "obn": "Обществознание", "geo": "География", "inf": "Информатика",
-        "sjl": "Словацкий", "anj": "Английский", "nej": "Немецкий", "frj": "Французский", "esp": "Испанский", "itj": "Итальянский", "ruj": "Русский", "ukj": "Украинский"
+        "sjl": "Словацкий", "anj": "Аnglijskij", "nej": "Nemeckij", "frj": "Francuzskij", "esp": "Ispanskij", "itj": "Italianskij", "ruj": "Russkij", "ukj": "Ukrainskij"
     }
 }
 
 L = st.query_params.get("lang", "SK").upper()
 t = lang_data.get(L, lang_data["SK"])
 
-# 3. TVOJE ID PRIEČINKOV
+# 3. TVOJE ID PRIEČINKOV (Už vyplnené podľa tvojho zoznamu)
 ids = {
-    "bio": "1HwEr80n2TnaAs7oyixCvcFWF5ZGKPjmf", "dej": "1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk", "fyz": "1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS", "che": "1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR",
-    "mat": "16o7nKWMoIOk7b8m90tXbgA4L2NeZ9STm", "obn": "1kNvYlsNxa64IVyB-QLSXQ_8pC6oQzof_", "geo": "1D7Zn_c3qn18aH5i_GrcxYawxZRoFzbN2", "inf": "1eg0Oq3w-3nDJ9EschjWPLGY2anrv6P7u",
-    "sjl": "1GY8gyXFXGIXG3gL5cXBPOlbEjsqowpA-", "anj": "1ffEMvwZA4zTCbcCLx3DqfAQYTmqt4fiB", "nej": "1rejCBuHI8qFm_y2Dr1zR9PtJnMJ9SkCI", "frj": "1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j",
-    "esp": "1ZGTJ3xtPY0nQ5blLiAZ-WcXE5DVzhm68", "itj": "161jDX2VhvCpRIoPpY1FLIj08rp5chhp_", "ruj": "1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5", "ukj": "1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO"
+    "bio": "1HwEr80n2TnaAs7oyixCvcFWF5ZGKPjmf", "dej": "1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk", 
+    "fyz": "1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS", "che": "1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR",
+    "mat": "16o7nKWMoIOk7b8m90tXbgA4L2NeZ9STm", "obn": "1kNvYlsNxa64IVyB-QLSXQ_8pC6oQzof_", 
+    "geo": "1D7Zn_c3qn18aH5i_GrcxYawxZRoFzbN2", "inf": "1eg0Oq3w-3nDJ9EschjWPLGY2anrv6P7u",
+    "sjl": "1GY8gyXFXGIXG3gL5cXBPOlbEjsqowpA-", "anj": "1ffEMvwZA4zTCbcCLx3DqfAQYTmqt4fiB", 
+    "nej": "1rejCBuHI8qFm_y2Dr1zR9PtJnMJ9SkCI", "frj": "1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j",
+    "esp": "1ZGTJ3xtPY0nQ5blLiAZ-WcXE5DVzhm68", "itj": "161jDX2VhvCpRIoPpY1FLIj08rp5chhp_", 
+    "ruj": "1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5", "ukj": "1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO"
 }
 
-# Zapamätanie vybratého priečinka
+# Inicializácia vybratého priečinka
 if "selected_folder" not in st.session_state:
     st.session_state.selected_folder = ids["bio"]
 
+# Funkcia na zmenu priečinka s automatickým scrollom
 def set_folder(folder_id):
     st.session_state.selected_folder = folder_id
+    st.components.v1.html(
+        f"""
+        <script>
+            window.parent.document.getElementById('pohlad-na-dokumenty').scrollIntoView({{behavior: 'smooth'}});
+        </script>
+        """,
+        height=0,
+    )
 
 # 4. HLAVNÁ ČASŤ - TITULOK A UPLOADER
 st.title(t["title"])
@@ -114,6 +127,9 @@ with j4:
 
 st.write("---")
 
+# Kotva pre automatický scroll
+st.markdown('<div id="pohlad-na-dokumenty"></div>', unsafe_allow_html=True)
+
 # 7. OKNO S DOKUMENTMI
 drive_url = f"https://drive.google.com/embeddedfolderview?id={st.session_state.selected_folder}#grid"
-st.components.v1.iframe(drive_url, height=600, scrolling=True)
+st.components.v1.iframe(drive_url, height=650, scrolling=True, key=st.session_state.selected_folder)
