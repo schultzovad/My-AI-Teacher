@@ -1,70 +1,86 @@
 import streamlit as st
 
-# 1. ZÁKLADNÉ NASTAVENIE (Tvoj pôvodný kód)
+# 1. ZÁKLADNÉ NASTAVENIE
 st.set_page_config(layout="wide")
-st.markdown("<style>#MainMenu, footer, header {visibility: hidden;} .stAppDeployButton {display:none;}</style>", unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    #MainMenu, footer, header {visibility: hidden;} 
+    .stAppDeployButton {display:none;}
+    iframe {border-radius: 15px; border: 1px solid #ddd;}
+    </style>
+""", unsafe_allow_html=True)
 
+# 2. KOMPLETNÉ JAZYKOVÉ DÁTA (8 JAZYKOV)
 lang_data = {
-    "SK": {"title": "📚 Študijné materiály", "up": "Nahraj svoje poznámky", "ok": "Súbor nahraný!", "subjects": "Predmety", "lang_sect": "Jazyky"},
-    "EN": {"title": "📚 Study Materials", "up": "Upload your notes", "ok": "File uploaded!", "subjects": "Subjects", "lang_sect": "Languages"},
-    "DE": {"title": "📚 Lernmaterialien", "up": "Notizen hochladen", "ok": "Datei hochgeladen!", "subjects": "Fächer", "lang_sect": "Sprachen"},
-    "ES": {"title": "📚 Materiales", "up": "Subir notas", "ok": "¡Archivo subido!", "subjects": "Materias", "lang_sect": "Idiomas"},
-    "FR": {"title": "📚 Matériels", "up": "Télécharger", "ok": "Fichier téléchargé !", "subjects": "Matières", "lang_sect": "Langues"},
-    "IT": {"title": "📚 Materiali", "up": "Carica note", "ok": "File caricato!", "subjects": "Materie", "lang_sect": "Lingue"},
-    "UA": {"title": "📚 Навчальні мат.", "up": "Завантажити", "ok": "Файл завантажено!", "subjects": "Предмети", "lang_sect": "Мови"},
-    "RU": {"title": "📚 Учебные мат.", "up": "Загрузить", "ok": "Файл загружен!", "subjects": "Предметы", "lang_sect": "Языки"}
+    "SK": {
+        "title": "📚 Študijné materiály", "up": "Nahraj svoje poznámky", "ok": "Súbor nahraný!",
+        "subj_list": "Zoznam predmetov a jazykov:",
+        "bio": "Biológia", "dej": "Dejepis", "fyz": "Fyzika", "che": "Chémia", "mat": "Matematika", "obn": "Občianska náuka", "geo": "Geografia", "inf": "Informatika",
+        "sjl": "Slovenčina", "anj": "Angličtina", "nej": "Nemčina", "frj": "Francúzština", "esp": "Španielčina", "itj": "Taliančina", "ruj": "Ruština", "ukj": "Ukrajinčina"
+    },
+    "EN": {
+        "title": "📚 Study Materials", "up": "Upload your notes", "ok": "File uploaded!",
+        "subj_list": "List of subjects and languages:",
+        "bio": "Biology", "dej": "History", "fyz": "Physics", "che": "Chemistry", "mat": "Mathematics", "obn": "Civics", "geo": "Geography", "inf": "Informatics",
+        "sjl": "Slovak", "anj": "English", "nej": "German", "frj": "French", "esp": "Spanish", "itj": "Italian", "ruj": "Russian", "ukj": "Ukrainian"
+    },
+    "DE": {
+        "title": "📚 Lernmaterialien", "up": "Notizen hochladen", "ok": "Datei hochgeladen!",
+        "subj_list": "Liste der Fächer und Sprachen:",
+        "bio": "Biologie", "dej": "Geschichte", "fyz": "Physik", "che": "Chemie", "mat": "Mathematik", "obn": "Sozialkunde", "geo": "Geographie", "inf": "Informatik",
+        "sjl": "Slowakisch", "anj": "Englisch", "nej": "Deutsch", "frj": "Französisch", "esp": "Spanisch", "itj": "Italienisch", "ruj": "Russisch", "ukj": "Ukrainisch"
+    },
+    "ES": {
+        "title": "📚 Materiales de estudio", "up": "Subir notas", "ok": "¡Archivo subido!",
+        "subj_list": "Lista de materias e idiomas:",
+        "bio": "Biología", "dej": "Historia", "fyz": "Física", "che": "Química", "mat": "Matemáticas", "obn": "Educación cívica", "geo": "Geografía", "inf": "Informática",
+        "sjl": "Eslovaco", "anj": "Inglés", "nej": "Alemán", "frj": "Francés", "esp": "Español", "itj": "Italiano", "ruj": "Ruso", "ukj": "Ucraniano"
+    },
+    "FR": {
+        "title": "📚 Matériels d'étude", "up": "Télécharger vos notes", "ok": "Fichier téléchargé !",
+        "subj_list": "Liste des matières et langues :",
+        "bio": "Biologie", "dej": "Histoire", "fyz": "Physique", "che": "Chimie", "mat": "Mathématiques", "obn": "Éducation civique", "geo": "Géographie", "inf": "Informatique",
+        "sjl": "Slovaque", "anj": "Anglais", "nej": "Allemand", "frj": "Français", "esp": "Espagnol", "itj": "Italien", "ruj": "Russe", "ukj": "Ukrainien"
+    },
+    "IT": {
+        "title": "📚 Materiali di studio", "up": "Carica note", "ok": "File caricato!",
+        "subj_list": "Elenco delle materie e delle lingue:",
+        "bio": "Biologia", "dej": "Storia", "fyz": "Fisica", "che": "Chimica", "mat": "Matematica", "obn": "Educazione civica", "geo": "Geografia", "inf": "Informatica",
+        "sjl": "Slovacco", "anj": "Inglese", "nej": "Tedesco", "frj": "Francese", "esp": "Spagnolo", "itj": "Italiano", "ruj": "Russo", "ukj": "Ucraino"
+    },
+    "UA": {
+        "title": "📚 Навчальні матеріали", "up": "Завантажити нотатки", "ok": "Файл завантажено!",
+        "subj_list": "Список предметів та мов:",
+        "bio": "Біологія", "dej": "Історія", "fyz": "Фізика", "che": "Хімія", "mat": "Математика", "obn": "Громадянська освіта", "geo": "Географія", "inf": "Інформатика",
+        "sjl": "Словацька", "anj": "Англійська", "nej": "Німецька", "frj": "Французька", "esp": "Іспанська", "itj": "Італійська", "ruj": "Російська", "ukj": "Українська"
+    },
+    "RU": {
+        "title": "📚 Учебные материалы", "up": "Загрузить заметки", "ok": "Файл загружен!",
+        "subj_list": "Список предметов и языков:",
+        "bio": "Биология", "dej": "История", "fyz": "Физика", "che": "Химия", "mat": "Математика", "obn": "Обществознание", "geo": "География", "inf": "Информатика",
+        "sjl": "Словацкий", "anj": "Английский", "nej": "Немецкий", "frj": "Французский", "esp": "Испанский", "itj": "Итальянский", "ruj": "Русский", "ukj": "Украинский"
+    }
 }
 
 L = st.query_params.get("lang", "SK").upper()
 t = lang_data.get(L, lang_data["SK"])
 
-# 2. TITULOK A UPLOADER (Tvoj pôvodný funkčný kód)
+# 3. UPLOADER (Tvoj pôvodný)
 st.title(t["title"])
 u = st.file_uploader(t["up"], type=['pdf', 'png', 'jpg'])
-if u: 
-    st.success(t["ok"])
+if u: st.success(t["ok"])
 
 st.write("---")
 
-# 3. KNIŽNICA PRIEČINKOV (Nová časť podľa tvojich fotiek)
-st.subheader(t["subjects"])
+# 4. EMBED GOOGLE DRIVE (Okno priamo v stránke)
+# DÔLEŽITÉ: Tu nahraď ID tvojho hlavného priečinka "Study materials"
+# Získaš ho z URL adresy priečinka (to dlhé za /folders/)
+FOLDER_ID = "1abc123_SEM_VLOZ_SVOJE_ID" 
 
-# Rozdelenie na 3 stĺpce pre predmety
-c1, c2, c3 = st.columns(3)
+st.subheader(t["subj_list"])
 
-with c1:
-        st.info("🧬 **Biológia**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1HwEr80n2TnaAs7oyixCvcFWF5ZGKPjmf")
-        
-        st.info("🏺 **Dejepis**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk")
+# Toto vytvorí okno s tvojimi priečinkami priamo v Streamlite
+drive_url = f"https://drive.google.com/embeddedfolderview?id={FOLDER_ID}#grid"
+st.components.v1.iframe(drive_url, height=600, scrolling=True)
 
-with c2:
-        st.info("⚛️ **Fyzika**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS")
-        
-        st.info("🧪 **Chémia**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR")
-
-with c3:
-        st.info("📐 **Matematika**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/16o7nKWMoIOk7b8m90tXbgA4L2NeZ9STm")
-        
-        st.info("⚖️ **Občianska náuka**")
-        st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1kNvYlsNxa64IVyB-QLSXQ_8pC6oQzof_")
-
-st.write("---")
-st.subheader("🌍 Jazyky")
-j1, j2, j3, j4 = st.columns(4)
-with j1:
-        st.link_button("🇸🇰 Slovenčina", "https://drive.google.com/drive/u/1/folders/1GY8gyXFXGIXG3gL5cXBPOlbEjsqowpA-")
-        st.link_button("🇬🇧 Angličtina", "https://drive.google.com/drive/u/1/folders/1ffEMvwZA4zTCbcCLx3DqfAQYTmqt4fiB")
-with j2:
-        st.link_button("🇩🇪 Nemčina", "https://drive.google.com/drive/u/1/folders/1rejCBuHI8qFm_y2Dr1zR9PtJnMJ9SkCI")
-        st.link_button("🇫🇷 Francúzština", "https://drive.google.com/drive/u/1/folders/1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j")
-with j3:
-        st.link_button("🇪🇸 Španielčina", "https://drive.google.com/drive/u/1/folders/1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j")
-        st.link_button("🇮🇹 Taliančina", "https://drive.google.com/drive/u/1/folders/161jDX2VhvCpRIoPpY1FLIj08rp5chhp_")
-with j4:
-        st.link_button("🇷🇺 Ruština", "https://drive.google.com/drive/u/1/folders/1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5")
-        st.link_button("🇺🇦 Ukrajinčina", "https://drive.google.com/drive/u/1/folders/1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO")
+st.info("💡 Tip: V okne vyššie uvidíte všetky predmety. Po kliknutí na priečinok uvidíte jeho obsah.")
