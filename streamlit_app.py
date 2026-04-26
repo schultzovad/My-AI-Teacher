@@ -12,23 +12,27 @@ if not api_key:
 genai.configure(api_key=api_key)
 model_ai = genai.GenerativeModel('gemini-3-flash-preview')
 
+# --- INICIALIZÁCIA (Dôležité pre odstránenie Erroru) ---
+if "m" not in st.session_state: st.session_state.m = []
+if "doc_content" not in st.session_state: st.session_state.doc_content = ""
+
 # 2. JAZYKOVÁ LOGIKA
 query_params = st.query_params
 jazyk = query_params.get("lang", "SK").upper()
 
 texty = {
-    "SK": {"title": "🤖 AI Tutor", "up_button": "Nahrať súbor", "up_prompt": "PDF alebo DOCX", "send_file": "Odoslať ⬆️", "input": "Napíš otázku k dokumentu...", "file_msg": "*(Súbor: {name})*", "ai_confirm": "Prijaté. Čo chceš vedieť?", "sys_prompt": "Odpovedaj výhradne v slovenskom jazyku."},
-    "EN": {"title": "🤖 AI Tutor", "up_button": "Upload file", "up_prompt": "PDF or DOCX", "send_file": "Send ⬆️", "input": "Ask a question...", "file_msg": "*(File: {name})*", "ai_confirm": "Received. What do you want to know?", "sys_prompt": "Answer exclusively in English."},
-    "DE": {"title": "🤖 KI-Tutor", "up_button": "Hochladen", "up_prompt": "PDF oder DOCX", "send_file": "Senden ⬆️", "input": "Stellen Sie eine Frage...", "file_msg": "*(Datei: {name})*", "ai_confirm": "Erhalten. Was möchten Sie wissen?", "sys_prompt": "Antworten Sie ausschließlich auf Deutsch."},
-    "IT": {"title": "🤖 Tutor IA", "up_button": "Carica", "up_prompt": "PDF o DOCX", "send_file": "Invia ⬆️", "input": "Fai una domanda...", "file_msg": "*(File: {name})*", "ai_confirm": "Ricevuto. Cosa vuoi sapere?", "sys_prompt": "Rispondi esclusivamente in italiano."},
-    "ES": {"title": "🤖 Tutor IA", "up_button": "Subir", "up_prompt": "PDF o DOCX", "send_file": "Enviar ⬆️", "input": "Haz una pregunta...", "file_msg": "*(Archivo: {name})*", "ai_confirm": "Recibido. ¿Qué quieres saber?", "sys_prompt": "Responde exclusivamente en español."},
-    "FR": {"title": "🤖 Tuteur IA", "up_button": "Charger", "up_prompt": "PDF ou DOCX", "send_file": "Envoyer ⬆️", "input": "Posez une question...", "file_msg": "*(Fichier: {name})*", "ai_confirm": "Reçu. Que voulez-vous savoir ?", "sys_prompt": "Répondez exclusivement en français."},
-    "UA": {"title": "🤖 AI Тьютор", "up_button": "Завантажити", "up_prompt": "PDF або DOCX", "send_file": "Надіслати ⬆️", "input": "Запитайте щось...", "file_msg": "*(Файл: {name})*", "ai_confirm": "Отримано. Що ви хочете знати?", "sys_prompt": "Відповідайте виключно українською мовою."},
-    "RU": {"title": "🤖 AI Тьютор", "up_button": "Загрузить", "up_prompt": "PDF или DOCX", "send_file": "Отправить ⬆️", "input": "Задайте вопрос...", "file_msg": "*(Файл: {name})*", "ai_confirm": "Получено. Что вы хотите знать?", "sys_prompt": "Отвечайте исключительно на русском языке."}
+    "SK": {"title": "🤖 AI Tutor", "up_button": "Nahrať súbor", "up_prompt": "PDF alebo DOCX", "send_file": "Odoslať ⬆️", "input": "Napíš otázku...", "file_msg": "*(Súbor: {name})*", "sys_prompt": "Odpovedaj výhradne v slovenskom jazyku."},
+    "EN": {"title": "🤖 AI Tutor", "up_button": "Upload file", "up_prompt": "PDF or DOCX", "send_file": "Send ⬆️", "input": "Ask a question...", "file_msg": "*(File: {name})*", "sys_prompt": "Answer exclusively in English."},
+    "DE": {"title": "🤖 KI-Tutor", "up_button": "Hochladen", "up_prompt": "PDF oder DOCX", "send_file": "Senden ⬆️", "input": "Stellen Sie eine Frage...", "file_msg": "*(Datei: {name})*", "sys_prompt": "Antworten Sie ausschließlich auf Deutsch."},
+    "IT": {"title": "🤖 Tutor IA", "up_button": "Carica", "up_prompt": "PDF o DOCX", "send_file": "Invia ⬆️", "input": "Fai una domanda...", "file_msg": "*(File: {name})*", "sys_prompt": "Rispondi esclusivamente in italiano."},
+    "ES": {"title": "🤖 Tutor IA", "up_button": "Subir", "up_prompt": "PDF o DOCX", "send_file": "Enviar ⬆️", "input": "Haz una pregunta...", "file_msg": "*(Archivo: {name})*", "sys_prompt": "Responde exclusivamente en español."},
+    "FR": {"title": "🤖 Tuteur IA", "up_button": "Charger", "up_prompt": "PDF ou DOCX", "send_file": "Envoyer ⬆️", "input": "Posez une question...", "file_msg": "*(Fichier: {name})*", "sys_prompt": "Répondez exclusivement en français."},
+    "UA": {"title": "🤖 AI Тьютор", "up_button": "Завантажити", "up_prompt": "PDF або DOCX", "send_file": "Надіслати ⬆️", "input": "Запитайте щось...", "file_msg": "*(Файл: {name})*", "sys_prompt": "Відповідайте виключно українською мовою."},
+    "RU": {"title": "🤖 AI Тьютор", "up_button": "Загрузить", "up_prompt": "PDF или DOCX", "send_file": "Отправить ⬆️", "input": "Задайте вопрос...", "file_msg": "*(Файл: {name})*", "sys_prompt": "Отвечайте исключительно на русском языке."}
 }
 T = texty.get(jazyk, texty["SK"])
 
-# 3. DIZAJN + OPRAVENÉ CSS (Uprataný uploader)
+# 3. DIZAJN + CSS (Uprataný uploader podľa tvojich pokynov)
 st.set_page_config(page_title=T["title"], layout="wide")
 
 st.markdown(f"""
@@ -36,58 +40,67 @@ st.markdown(f"""
     header, footer {{visibility: hidden;}} 
     .stAppDeployButton {{display:none;}}
     
-    /* 1. Zarovnanie vnútra uploadera na stred */
+    /* Vycentrovanie nahrávacieho boxu */
     div[data-testid="stFileUploader"] section {{
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 1.5rem;
+        padding: 2rem;
+        border: 1px dashed #ccc;
+        border-radius: 10px;
     }}
 
-    /* 2. Úprava bieleho tlačidla (aby šípka bola v strede) */
+    /* Biele tlačidlo so šípkou v strede */
     div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
         width: 80px;
-        height: 40px;
+        height: 50px;
+        background-color: white !important;
+        border: 1px solid #ddd !important;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto !important;
+        color: transparent !important; /* Skryje nápis Browse */
+        position: relative;
     }}
 
-    /* 3. Skrytie pôvodných anglických textov (Limit, Drag&Drop, Browse) */
+    /* Vrátenie a vycentrovanie šípky na tlačidle */
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] svg {{
+        fill: #333 !important;
+        width: 24px;
+        height: 24px;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }}
+
+    /* Skrytie všetkých pôvodných textov Streamlitu */
     div[data-testid="stFileUploader"] section div[data-testid="stMarkdownContainer"] p {{
         display: none !important;
     }}
     
-    /* Skrytie textu 'Browse files' na tlačidle, ostane len ikona */
-    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
-        color: transparent !important;
-    }}
-    /* Vrátenie ikony (šípky) do čiernej farby a presne na stred */
-    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] svg {{
-        fill: black !important;
-        color: black !important;
-        position: absolute;
-    }}
-
-    /* 4. Vloženie tvojho textu pod tlačidlo */
+    /* Vloženie nového textu POD tlačidlo */
     div[data-testid="stFileUploader"] section::after {{
         content: "{T['up_button']} (200MB • {T['up_prompt']})";
         color: #555;
         font-size: 14px;
-        margin-top: 10px;
+        margin-top: 15px;
+        display: block;
         text-align: center;
     }}
-
-    /* 5. Odstránenie všetkého čo by mohlo trčať napravo alebo naokolo */
-    div[data-testid="stFileUploader"] section > div {{
-        width: auto !important;
+    
+    /* Odstránenie prebytočných vecí napravo */
+    div[data-testid="stFileUploader"] section > div:nth-child(2) {{
+        display: none !important;
     }}
     </style>
 """, unsafe_allow_html=True)
 
-# 4. CHAT AREA
+st.title(T["title"])
+
+# 4. CHAT AREA (Teraz bezpečne po inicializácii)
 chat_container = st.container()
 with chat_container:
     for m in st.session_state.m:
@@ -123,7 +136,7 @@ with st.container():
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-# 6. LOGIKA PÍSANIA
+# 6. PÍSANIE OTÁZKY
 if p := st.chat_input(T["input"]):
     st.session_state.m.append({"role": "user", "content": p})
     with chat_container:
