@@ -32,7 +32,7 @@ texty = {
 }
 T = texty.get(jazyk, texty["SK"])
 
-# 3. DIZAJN + CSS (Uprataný uploader podľa tvojich pokynov)
+# 3. DIZAJN + CSS (Štíhly a elegantný uploader)
 st.set_page_config(page_title=T["title"], layout="wide")
 
 st.markdown(f"""
@@ -40,66 +40,60 @@ st.markdown(f"""
     header, footer {{visibility: hidden;}} 
     .stAppDeployButton {{display:none;}}
     
-    /* Vycentrovanie nahrávacieho boxu */
+    /* Zmenšenie celého nahrávacieho boxu na jeden riadok */
     div[data-testid="stFileUploader"] section {{
         display: flex;
-        flex-direction: column;
+        flex-direction: row; /* Všetko v jednom riadku */
         align-items: center;
-        justify-content: center;
-        padding: 2rem;
-        border: 1px dashed #ccc;
-        border-radius: 10px;
+        justify-content: flex-start;
+        padding: 5px 15px !important;
+        min-height: 50px !important;
+        border: 1px solid #ddd;
+        border-radius: 8px;
     }}
 
-    /* Biele tlačidlo so šípkou v strede */
+    /* Biele tlačidlo so šípkou (naľavo) */
     div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
-        width: 80px;
-        height: 50px;
+        width: 40px !important;
+        height: 30px !important;
         background-color: white !important;
-        border: 1px solid #ddd !important;
+        border: 1px solid #ccc !important;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto !important;
-        color: transparent !important; /* Skryje nápis Browse */
+        margin: 0 10px 0 0 !important;
+        color: transparent !important;
         position: relative;
     }}
 
-    /* Vrátenie a vycentrovanie šípky na tlačidle */
+    /* Ikona šípky v strede malého tlačidla */
     div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] svg {{
         fill: #333 !important;
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
         position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
     }}
 
-    /* Skrytie všetkých pôvodných textov Streamlitu */
+    /* Skrytie všetkých pôvodných textov */
     div[data-testid="stFileUploader"] section div[data-testid="stMarkdownContainer"] p {{
         display: none !important;
     }}
     
-    /* Vloženie nového textu POD tlačidlo */
+    /* Vloženie textu HNEĎ NAPRAVO od tlačidla */
     div[data-testid="stFileUploader"] section::after {{
         content: "{T['up_button']} (200MB • {T['up_prompt']})";
         color: #555;
         font-size: 14px;
-        margin-top: 15px;
-        display: block;
-        text-align: center;
+        white-space: nowrap;
     }}
     
-    /* Odstránenie prebytočných vecí napravo */
-    div[data-testid="stFileUploader"] section > div:nth-child(2) {{
+    /* Odstránenie prebytočných kontajnerov a ikoniek napravo */
+    div[data-testid="stFileUploader"] section > div:nth-child(2),
+    div[data-testid="stFileUploader"] section svg[data-testid="stIcon"] {{
         display: none !important;
     }}
     </style>
 """, unsafe_allow_html=True)
-
-st.title(T["title"])
-
 # 4. CHAT AREA (Teraz bezpečne po inicializácii)
 chat_container = st.container()
 with chat_container:
