@@ -1,41 +1,45 @@
 import streamlit as st
 import google.generativeai as genai
 import pypdf
-import docx  # Knižnica pre Word dokumenty
+import docx
 
-# 1. NASTAVENIE API A MODELU
+# 1. NASTAVENIE API
 api_key = st.secrets.get("tutor") or st.secrets.get("GOOGLE_API_KEY")
 if not api_key:
-    st.error("⚠️ API kľúč chýba! Skontroluj Secrets v Streamlit Cloud.")
+    st.error("⚠️ API kľúč chýba! Skontroluj Secrets v Streamlit Cloud (Advanced settings).")
     st.stop()
 
 genai.configure(api_key=api_key)
+# Používame model, ktorý ti overene funguje
 model_ai = genai.GenerativeModel('gemini-3-flash-preview')
 
-# 2. JAZYKOVÉ NASTAVENIA (podľa ?lang= v URL)
+# 2. JAZYKOVÁ LOGIKA (Prepojené s URL parametrom ?lang=)
 query_params = st.query_params
 jazyk = query_params.get("lang", "SK").upper()
 
+# Slovník všetkých textov v aplikácii
 texty = {
     "SK": {
         "title": "🤖 AI Tutor",
-        "upload": "Vybrať PDF alebo Word súbor",
+        "upload": "Vybrať súbor (PDF, DOCX)",
         "send_file": "Odoslať súbor ⬆️",
         "input": "Napíš otázku k dokumentu...",
         "file_msg": "*(Odoslaný súbor: {name})*",
-        "ai_confirm": "Súbor som úspešne prijal. Čo ťa z neho zaujíma?",
-        "error_read": "Nepodarilo sa prečítať súbor.",
-        "no_text": "Súbor neobsahuje žiadny čitateľný text."
+        "ai_confirm": "Súbor som prijal. Čo ťa z neho zaujíma?",
+        "error_read": "Chyba pri čítaní súboru.",
+        "no_text": "Súbor neobsahuje čitateľný text.",
+        "sys_prompt": "Hovor a odpovedaj výhradne v slovenskom jazyku. Buď stručný a nápomocný."
     },
     "EN": {
         "title": "🤖 AI Tutor",
-        "upload": "Select PDF or Word file",
+        "upload": "Select file (PDF, DOCX)",
         "send_file": "Send file ⬆️",
-        "input": "Ask a question about the document...",
+        "input": "Ask a question...",
         "file_msg": "*(Uploaded file: {name})*",
-        "ai_confirm": "I've received the file successfully. What would you like to know?",
-        "error_read": "Failed to read the file.",
-        "no_text": "The file contains no readable text."
+        "ai_confirm": "File received. What would you like to know?",
+        "error_read": "Error reading file.",
+        "no_text": "File contains no readable text.",
+        "sys_prompt": "Speak and answer exclusively in English. Be concise and helpful."
     }
 }
 T = texty.get(jazyk, texty["SK"])
@@ -47,6 +51,8 @@ st.markdown("""
     header, footer {visibility: hidden;} 
     .stAppDeployButton {display:none;}
     #MainMenu {visibility: hidden;}
+    /* Úprava okrajov, aby to vo Frameri lepšie sedelo */
+    .block-container {padding-top: 2rem; padding-bottom: 2rem;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -56,7 +62,7 @@ if "doc_content" not in st.session_state: st.session_state.doc_content = ""
 
 st.title(T["title"])
 
-# 4. ZOBRAZENIE ČATU
+# 4. ZOBRAZENIE ČATU (Hlavná plocha)
 chat_container = st.container()
 with chat_container:
     for m in st.session_state.m:
@@ -65,35 +71,35 @@ with chat_container:
 
 st.write("---")
 
-# 5. FIXNÁ SPODNÁ ZÓNA (Nahrávanie a tlačidlo)
-spodny_panel = st.container()
-with spodny_panel:
+# 5. SPODNÁ ZÓNA (Nahrávanie a tlačidlo na odoslanie súboru)
+with st.container():
     col1, col2 = st.columns([4, 1])
     with col1:
-        # Pridaná podpora pre .docx
         u = st.file_uploader(T["upload"], type=['pdf', 'docx'], label_visibility="collapsed")
     with col2:
-        # 6. LOGIKA ODOSLANIA SÚBORU
+        # Tlačidlo na manuálne odoslanie súboru
         if st.button(T["send_file"], use_container_width=True):
-            if u is not None:
+            if u:
                 try:
-                    raw_text = ""
-                    # Spracovanie podľa typu súboru
+                    text = ""
                     if u.name.endswith('.pdf'):
+                        # Čítanie PDF
                         reader = pypdf.PdfReader(u)
-                        raw_text = "".join([p.extract_text() for p in reader.pages]).strip()
-                    elif u.name.endswith('.docx'):
+                        text = "".join([p.extract_text() for p in reader.pages]).strip()
+                    else:
+                        # Čítanie Wordu
                         doc = docx.Document(u)
-                        raw_text = "\n".join([para.text for para in doc.paragraphs]).strip()
+                        text = "\n".join([para.text for para in doc.paragraphs]).strip()
                     
-                    if raw_text:
-                        st.session_state.doc_content = raw_text
+                    if text:
+                        st.session_state.doc_content = text
+                        # Pridáme vizuálnu info do čatu o nahraní
                         st.session_state.m.append({"role": "user", "content": T["file_msg"].format(name=u.name)})
                         
+                        # AI hneď potvrdí prijatie v správnom jazyku
                         with chat_container:
                             with st.chat_message("assistant"):
-                                prompt_intro = f"System: User uploaded a document named {u.name}. Context start: {raw_text[:500]}. Briefly confirm receipt in {jazyk}: {T['ai_confirm']}"
-                                res = model_ai.generate_content(prompt_intro)
+                                res = model_ai.generate_content(f"{T['sys_prompt']} Potvrď jednou vetou prijatie dokumentu {u.name}.")
                                 st.markdown(res.text)
                                 st.session_state.m.append({"role": "assistant", "content": res.text})
                         st.rerun()
@@ -102,21 +108,22 @@ with spodny_panel:
                 except Exception as e:
                     st.error(f"{T['error_read']}: {e}")
             else:
-                st.info("Najprv vyber súbor v okienku vľavo.")
+                st.info("Najprv vyber súbor.")
 
-# 7. LOGIKA PÍSANIA OTÁZOK
+# 6. PÍSANIE OTÁZOK
 p = st.chat_input(T["input"])
 if p:
     st.session_state.m.append({"role": "user", "content": p})
     with chat_container:
         with st.chat_message("user"):
             st.markdown(p)
+        
         with st.chat_message("assistant"):
-            # Spojíme kontext z dokumentu a otázku
+            # Kombinujeme systémový príkaz na jazyk + obsah dokumentu + otázku
             if st.session_state.doc_content:
-                full_prompt = f"Kontext z nahraného dokumentu: {st.session_state.doc_content}\n\nOtázka používateľa: {p}\nOdpovedaj v jazyku: {jazyk}"
+                full_prompt = f"{T['sys_prompt']}\n\nKontext z dokumentu: {st.session_state.doc_content}\n\nOtázka používateľa: {p}"
             else:
-                full_prompt = f"{p}\nOdpovedaj v jazyku: {jazyk}"
+                full_prompt = f"{T['sys_prompt']}\n\nOtázka používateľa: {p}"
             
             try:
                 res = model_ai.generate_content(full_prompt)
