@@ -28,7 +28,7 @@ texty = {
 }
 T = texty.get(jazyk, texty["SK"])
 
-# 3. DIZAJN + OPRAVENÉ CSS (Preklady v rámčeku)
+# 3. DIZAJN + OPRAVENÉ CSS (Uprataný uploader)
 st.set_page_config(page_title=T["title"], layout="wide")
 
 st.markdown(f"""
@@ -36,50 +36,56 @@ st.markdown(f"""
     header, footer {{visibility: hidden;}} 
     .stAppDeployButton {{display:none;}}
     
-    /* Úprava celého uploaderu */
+    /* 1. Zarovnanie vnútra uploadera na stred */
     div[data-testid="stFileUploader"] section {{
-        padding: 1rem;
-    }}
-
-    /* Preklad tlačidla 'Browse files' */
-    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
-        color: transparent !important;
-        position: relative;
-    }}
-    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"]::after {{
-        content: "{T['up_button']}";
-        color: black;
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        white-space: nowrap;
-    }}
-
-    /* Skrytie Limit 200MB a Drag and Drop */
-    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p {{
-        display: none;
-    }}
-
-    /* Vloženie nového textu namiesto nich priamo do rámčeka */
-    div[data-testid="stFileUploader"] section > div {{
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 10px;
+        padding: 1.5rem;
     }}
+
+    /* 2. Úprava bieleho tlačidla (aby šípka bola v strede) */
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
+        width: 80px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto !important;
+    }}
+
+    /* 3. Skrytie pôvodných anglických textov (Limit, Drag&Drop, Browse) */
+    div[data-testid="stFileUploader"] section div[data-testid="stMarkdownContainer"] p {{
+        display: none !important;
+    }}
+    
+    /* Skrytie textu 'Browse files' na tlačidle, ostane len ikona */
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
+        color: transparent !important;
+    }}
+    /* Vrátenie ikony (šípky) do čiernej farby a presne na stred */
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] svg {{
+        fill: black !important;
+        color: black !important;
+        position: absolute;
+    }}
+
+    /* 4. Vloženie tvojho textu pod tlačidlo */
     div[data-testid="stFileUploader"] section::after {{
-        content: "{T['up_prompt']}";
+        content: "{T['up_button']} (200MB • {T['up_prompt']})";
         color: #555;
         font-size: 14px;
+        margin-top: 10px;
+        text-align: center;
+    }}
+
+    /* 5. Odstránenie všetkého čo by mohlo trčať napravo alebo naokolo */
+    div[data-testid="stFileUploader"] section > div {{
+        width: auto !important;
     }}
     </style>
 """, unsafe_allow_html=True)
-
-if "m" not in st.session_state: st.session_state.m = []
-if "doc_content" not in st.session_state: st.session_state.doc_content = ""
-
-st.title(T["title"])
 
 # 4. CHAT AREA
 chat_container = st.container()
