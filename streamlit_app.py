@@ -21,18 +21,18 @@ query_params = st.query_params
 jazyk = query_params.get("lang", "SK").upper()
 
 texty = {
-    "SK": {"title": "🤖 AI Tutor", "up_button": "Nahrať", "up_prompt": "PDF alebo DOCX", "send_file": "Odoslať ⬆️", "input": "Napíš otázku...", "file_msg": "*(Súbor: {name})*", "selected": "Vybraný súbor:", "sys_prompt": "Odpovedaj výhradne v slovenskom jazyku."},
-    "EN": {"title": "🤖 AI Tutor", "up_button": "Upload", "up_prompt": "PDF or DOCX", "send_file": "Send ⬆️", "input": "Ask a question...", "file_msg": "*(File: {name})*", "selected": "Selected file:", "sys_prompt": "Answer exclusively in English."},
-    "DE": {"title": "🤖 KI-Tutor", "up_button": "Hochladen", "up_prompt": "PDF oder DOCX", "send_file": "Senden ⬆️", "input": "Frage stellen...", "file_msg": "*(Datei: {name})*", "selected": "Ausgewählte Datei:", "sys_prompt": "Antworten Sie auf Deutsch."},
-    "IT": {"title": "🤖 Tutor IA", "up_button": "Carica", "up_prompt": "PDF o DOCX", "send_file": "Invia ⬆️", "input": "Fai una domanda...", "file_msg": "*(File: {name})*", "selected": "File selezionato:", "sys_prompt": "Rispondi in italiano."},
-    "ES": {"title": "🤖 Tutor IA", "up_button": "Subir", "up_prompt": "PDF o DOCX", "send_file": "Enviar ⬆️", "input": "Preguntar...", "file_msg": "*(Archivo: {name})*", "selected": "Archivo seleccionado:", "sys_prompt": "Responde en español."},
-    "FR": {"title": "🤖 Tuteur IA", "up_button": "Charger", "up_prompt": "PDF ou DOCX", "send_file": "Envoyer ⬆️", "input": "Question...", "file_msg": "*(Fichier: {name})*", "selected": "Fichier sélectionné:", "sys_prompt": "Répondez en français."},
-    "UA": {"title": "🤖 AI Тьютор", "up_button": "Завантажити", "up_prompt": "PDF або DOCX", "send_file": "Надіслати ⬆️", "input": "Запитати...", "file_msg": "*(Файл: {name})*", "selected": "Вибраний файл:", "sys_prompt": "Відповідайте українською."},
-    "RU": {"title": "🤖 AI Тьютор", "up_button": "Загрузить", "up_prompt": "PDF или DOCX", "send_file": "Отправить ⬆️", "input": "Спросить...", "file_msg": "*(Файл: {name})*", "selected": "Выбранный файл:", "sys_prompt": "Отвечайте на русском."}
+    "SK": {"title": "🤖 AI Tutor", "selected": "Vybraný súbor:", "send_file": "Odoslať ⬆️", "input": "Napíš otázku...", "file_msg": "*(Súbor: {name})*", "sys_prompt": "Odpovedaj výhradne v slovenskom jazyku."},
+    "EN": {"title": "🤖 AI Tutor", "selected": "Selected file:", "send_file": "Send ⬆️", "input": "Ask a question...", "file_msg": "*(File: {name})*", "sys_prompt": "Answer exclusively in English."},
+    "DE": {"title": "🤖 KI-Tutor", "selected": "Ausgewählte Datei:", "send_file": "Senden ⬆️", "input": "Frage stellen...", "file_msg": "*(Datei: {name})*", "sys_prompt": "Antworten Sie na Deutsch."},
+    "IT": {"title": "🤖 Tutor IA", "selected": "File selezionato:", "send_file": "Invia ⬆️", "input": "Fai una domanda...", "file_msg": "*(File: {name})*", "sys_prompt": "Rispondi in italiano."},
+    "ES": {"title": "🤖 Tutor IA", "selected": "Archivo seleccionado:", "send_file": "Enviar ⬆️", "input": "Preguntar...", "file_msg": "*(Archivo: {name})*", "sys_prompt": "Responde en español."},
+    "FR": {"title": "🤖 Tuteur IA", "selected": "Fichier sélectionné:", "send_file": "Envoyer ⬆️", "input": "Question...", "file_msg": "*(Fichier: {name})*", "sys_prompt": "Répondez en français."},
+    "UA": {"title": "🤖 AI Тьютор", "selected": "Вибраний файл:", "send_file": "Надіслати ⬆️", "input": "Запитати...", "file_msg": "*(Файл: {name})*", "sys_prompt": "Відповідайте українською."},
+    "RU": {"title": "🤖 AI Тьютор", "selected": "Выбранный файл:", "send_file": "Отправить ⬆️", "input": "Спросить...", "file_msg": "*(Файл: {name})*", "sys_prompt": "Отвечайте на русском."}
 }
 T = texty.get(jazyk, texty["SK"])
 
-# 3. DIZAJN + CSS
+# 3. DIZAJN + CSS (TOTÁLNA OČISTA)
 st.set_page_config(page_title=T["title"], layout="wide")
 
 st.markdown(f"""
@@ -40,30 +40,34 @@ st.markdown(f"""
     header, footer {{visibility: hidden;}} 
     .stAppDeployButton {{display:none;}}
     
-    /* Štíhly uploader */
+    /* 1. Štíhla lišta pre uploader */
     div[data-testid="stFileUploader"] section {{
         display: flex;
         flex-direction: row;
         align-items: center;
-        justify-content: flex-start;
-        padding: 5px 15px !important;
-        min-height: 50px !important;
-        border: 1px solid #ddd;
+        justify-content: center;
+        padding: 0 !important;
+        min-height: 45px !important;
+        height: 45px !important;
+        border: 1px solid #eee;
         border-radius: 8px;
+        background-color: #fafafa;
+        overflow: hidden;
     }}
 
-    /* Biele tlačidlo so šípkou */
+    /* 2. Biele tlačidlo so šípkou */
     div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
         width: 40px !important;
         height: 30px !important;
         background-color: white !important;
         border: 1px solid #ccc !important;
+        color: transparent !important;
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-right: 10px !important;
-        color: transparent !important;
-        position: relative;
+        margin: 0 !important;
+        padding: 0 !important;
     }}
 
     div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] svg {{
@@ -73,30 +77,30 @@ st.markdown(f"""
         position: absolute;
     }}
 
-    /* Skrytie default textov */
-    div[data-testid="stFileUploader"] section div[data-testid="stMarkdownContainer"] p {{
+    /* 3. TU JE TO: Úplné odstránenie nápisu 'Nahrať (200MB...)' */
+    div[data-testid="stFileUploader"] section::after,
+    div[data-testid="stFileUploader"] section::before,
+    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p,
+    div[data-testid="stFileUploader"] label {{
         display: none !important;
+        content: "" !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
     }}
     
-    /* Vloženie vlastného textu do boxu */
-    div[data-testid="stFileUploader"] section::after {{
-        content: "{T['up_button']} (200MB • {T['up_prompt']})";
-        color: #555;
-        font-size: 13px;
-        white-space: nowrap;
-    }}
-    
-    /* Skrytie ikony a zoznamu nahratých súborov Streamlitu (vytvoríme si vlastný) */
+    /* Skrytie systémových prvkov pod boxom */
     div[data-testid="stFileUploader"] section + div {{
         display: none !important;
     }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- ZOBRAZENIE NÁZVU ---
+# 4. TITULOK
 st.title(T["title"])
 
-# 4. CHAT AREA
+# 5. CHAT AREA
 chat_container = st.container()
 with chat_container:
     for m in st.session_state.m:
@@ -105,14 +109,14 @@ with chat_container:
 
 st.write("---")
 
-# 5. SPODNÝ PANEL
+# 6. SPODNÝ PANEL (Uploader a vstup)
 with st.container():
     col1, col2 = st.columns([4, 1])
     with col1:
         u = st.file_uploader("uploader", type=['pdf', 'docx'], label_visibility="collapsed")
-        # --- NOVINKA: Indikátor vybratého súboru ---
+        # Zobrazenie indikátora len keď je niečo vybraté
         if u is not None:
-            st.markdown(f"✅ **{T['selected']}** `{u.name}`")
+            st.info(f"📄 **{T['selected']}** {u.name}")
             
     with col2:
         if st.button(T["send_file"], use_container_width=True):
@@ -136,7 +140,6 @@ with st.container():
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-# 6. LOGIKA PÍSANIA
 if p := st.chat_input(T["input"]):
     st.session_state.m.append({"role": "user", "content": p})
     with chat_container:
