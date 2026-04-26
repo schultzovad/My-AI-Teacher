@@ -53,18 +53,18 @@ with c3:
         st.info("⚖️ **Občianska náuka**")
         st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1kNvYlsNxa64IVyB-QLSXQ_8pC6oQzof_")
 
-    st.write("---")
-    st.subheader("🌍 Jazyky")
-    j1, j2, j3, j4 = st.columns(4)
-    with j1:
+st.write("---")
+st.subheader("🌍 Jazyky")
+j1, j2, j3, j4 = st.columns(4)
+with j1:
         st.link_button("🇸🇰 Slovenčina", "https://drive.google.com/drive/u/1/folders/1GY8gyXFXGIXG3gL5cXBPOlbEjsqowpA-")
         st.link_button("🇬🇧 Angličtina", "https://drive.google.com/drive/u/1/folders/1ffEMvwZA4zTCbcCLx3DqfAQYTmqt4fiB")
-    with j2:
+with j2:
         st.link_button("🇩🇪 Nemčina", "https://drive.google.com/drive/u/1/folders/1rejCBuHI8qFm_y2Dr1zR9PtJnMJ9SkCI")
         st.link_button("🇫🇷 Francúzština", "https://drive.google.com/drive/u/1/folders/1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j")
-    with j3:
+with j3:
         st.link_button("🇪🇸 Španielčina", "https://drive.google.com/drive/u/1/folders/1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j")
         st.link_button("🇮🇹 Taliančina", "https://drive.google.com/drive/u/1/folders/161jDX2VhvCpRIoPpY1FLIj08rp5chhp_")
-    with j4:
+with j4:
         st.link_button("🇷🇺 Ruština", "https://drive.google.com/drive/u/1/folders/1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5")
         st.link_button("🇺🇦 Ukrajinčina", "https://drive.google.com/drive/u/1/folders/1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO")
