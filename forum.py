@@ -39,14 +39,14 @@ with c1:
         st.info("🏺 **Dejepis**")
         st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1zbicCs41T0Vrjf5DxyQ-5OJaWGvCl5kk")
 
-    with c2:
+with c2:
         st.info("⚛️ **Fyzika**")
         st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1LumTX7YUXknUu16WcG9ooUYq6Nchc-XS")
         
         st.info("🧪 **Chémia**")
         st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/1BrnIjnLQfB9ZjcmMxmz-e-_QvoyRkKaR")
 
-    with c3:
+with c3:
         st.info("📐 **Matematika**")
         st.link_button("Otvoriť", "https://drive.google.com/drive/u/1/folders/16o7nKWMoIOk7b8m90tXbgA4L2NeZ9STm")
         
