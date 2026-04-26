@@ -42,4 +42,77 @@ ids = {
     "sjl": "1GY8gyXFXGIXG3gL5cXBPOlbEjsqowpA-", "anj": "1ffEMvwZA4zTCbcCLx3DqfAQYTmqt4fiB", 
     "nej": "1rejCBuHI8qFm_y2Dr1zR9PtJnMJ9SkCI", "frj": "1qf6u3qAMKLkTK4e1QBbBCVo0VNothU3j",
     "esp": "1ZGTJ3xtPY0nQ5blLiAZ-WcXE5DVzhm68", "itj": "161jDX2VhvCpRIoPpY1FLIj08rp5chhp_", 
-    "ruj": "1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5", "ukj": "1FSp1PuT1yAJjR3
+    "ruj": "1w7F9_8m4DkFnXx33Iys_kLWgfWPI_Gt5", "ukj": "1FSp1PuT1yAJjR3HW17sgvXXIyIWrYHYO"
+}
+
+if "selected_folder" not in st.session_state:
+    st.session_state.selected_folder = ids["bio"]
+
+def set_folder(folder_id):
+    st.session_state.selected_folder = folder_id
+    st.components.v1.html(f"<script>window.parent.document.getElementById('pohlad-na-dokumenty').scrollIntoView({{behavior: 'smooth'}});</script>", height=0)
+
+# 4. KONFIGURÁCIA LINKOV NA FORMULÁRE
+# Sem vlož svoje vygenerované linky z Google Forms
+formular_links = {
+    "SK": "https://docs.google.com/forms/d/e/1FAIpQLSfxNyMbk0diQNuoeNAgDOE3vn0y1t8kpDeZoqlmd4110nBjFA/viewform?usp=header",
+    "EN": "https://docs.google.com/forms/d/e/1FAIpQLSfvCY-vVqyop_8uOaZBEFgA2laeRd4zG7F70wZvDCN3dWtVPg/viewform?usp=header",
+    "DE": "https://docs.google.com/forms/d/e/1FAIpQLSepSSZMVdPI-J0eVFdtQvsnJpLhYl8uyt29CkbB3MNaJYyFnA/viewform?usp=header",
+    "UA": "https://docs.google.com/forms/d/e/1FAIpQLSdsYcIiC6TRQ9glMkieK2LNxc_7vrbW-UNqiFTp8K-Kct30-g/viewform?usp=header", # Ten podľa ukrajinskej abecedy
+    "RU": "https://docs.google.com/forms/d/e/1FAIpQLSfm6MSh883zHEcKuoPFonsYXvXnlnp3jTyeX1E1k4Cv-1LEig/viewform?usp=header", # Ten podľa ruskej abecedy
+    "ES": "https://docs.google.com/forms/d/e/1FAIpQLSejsQSrap2_oCCWivoICIJAcu62X7W2b-BDkgnauLMR6j-2ZA/viewform?usp=header",
+    "FR": "https://docs.google.com/forms/d/e/1FAIpQLSdlBewVHJ_CY79AX2o-kKeFvokRiJI3F5sNVpQp89-Bi3x7Zw/viewform?usp=header",
+    "IT": "https://docs.google.com/forms/d/e/1FAIpQLSe-STuWDIi88NcmRrD-3zvuPubz1P2xeL5WezJR1oAATd3HdQ/viewform?usp=header"
+}
+
+# Výber linku podľa jazyka (ak chýba, použije sa SK verzia)
+finalny_link = formular_links.get(L, formular_links["SK"])
+
+# 5. HLAVNÁ ČASŤ - TITULOK A TLAČIDLO NAHRÁVANIA
+st.title(t["title"])
+
+if "TU_VLOZ" not in finalny_link:
+    st.link_button(t["up"], finalny_link, use_container_width=True)
+else:
+    st.warning("Link na formulár nie je nastavený.")
+
+st.write("---")
+
+# 6. TLAČIDLÁ PREDMETOV
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    if st.button(t["bio"], use_container_width=True): set_folder(ids["bio"])
+    if st.button(t["dej"], use_container_width=True): set_folder(ids["dej"])
+with c2:
+    if st.button(t["fyz"], use_container_width=True): set_folder(ids["fyz"])
+    if st.button(t["che"], use_container_width=True): set_folder(ids["che"])
+with c3:
+    if st.button(t["mat"], use_container_width=True): set_folder(ids["mat"])
+    if st.button(t["obn"], use_container_width=True): set_folder(ids["obn"])
+with c4:
+    if st.button(t["geo"], use_container_width=True): set_folder(ids["geo"])
+    if st.button(t["inf"], use_container_width=True): set_folder(ids["inf"])
+
+# 7. TLAČIDLÁ JAZYKOV
+st.write("---")
+j1, j2, j3, j4 = st.columns(4)
+with j1:
+    if st.button(t["sjl"], use_container_width=True): set_folder(ids["sjl"])
+    if st.button(t["anj"], use_container_width=True): set_folder(ids["anj"])
+with j2:
+    if st.button(t["nej"], use_container_width=True): set_folder(ids["nej"])
+    if st.button(t["frj"], use_container_width=True): set_folder(ids["frj"])
+with j3:
+    if st.button(t["esp"], use_container_width=True): set_folder(ids["esp"])
+    if st.button(t["itj"], use_container_width=True): set_folder(ids["itj"])
+with j4:
+    if st.button(t["ruj"], use_container_width=True): set_folder(ids["ruj"])
+    if st.button(t["ukj"], use_container_width=True): set_folder(ids["ukj"])
+
+st.write("---")
+# Neviditeľná kotva pre scroll
+st.markdown('<div id="pohlad-na-dokumenty"></div>', unsafe_allow_html=True)
+
+# 8. OKNO S DOKUMENTMI
+drive_url = f"https://drive.google.com/embeddedfolderview?id={st.session_state.selected_folder}#grid"
+st.components.v1.iframe(drive_url, height=650, scrolling=True)
