@@ -12,83 +12,66 @@ if not api_key:
 genai.configure(api_key=api_key)
 model_ai = genai.GenerativeModel('gemini-3-flash-preview')
 
-# 2. JAZYKOVÁ LOGIKA (Prepojené s Framerom cez ?lang=)
+# 2. JAZYKOVÁ LOGIKA
 query_params = st.query_params
 jazyk = query_params.get("lang", "SK").upper()
 
 texty = {
-    "SK": {
-        "title": "🤖 AI Tutor",
-        "up_button": "Nahrať",       # Text na tlačidle (namiesto Upload)
-        "up_prompt": "alebo pretiahnite súbor (PDF, DOCX)", # Prompt (namiesto Drag & Drop)
-        "send_file": "Odoslať ⬆️",
-        "input": "Napíš otázku...",
-        "file_msg": "*(Súbor: {name})*",
-        "ai_confirm": "Prijaté. Čo chceš vedieť?",
-        "sys_prompt": "Odpovedaj výhradne v slovenskom jazyku."
-    },
-    "EN": {
-        "title": "🤖 AI Tutor",
-        "up_button": "Upload",
-        "up_prompt": "or drag file (PDF, DOCX)",
-        "send_file": "Send ⬆️",
-        "input": "Ask a question...",
-        "file_msg": "*(File: {name})*",
-        "ai_confirm": "Received. What do you want to know?",
-        "sys_prompt": "Answer exclusively in English."
-    },
-    "DE": {
-        "title": "🤖 KI-Tutor",
-        "up_button": "Hochladen",
-        "up_prompt": "oder Datei ziehen (PDF, DOCX)",
-        "send_file": "Senden ⬆️",
-        "input": "Stellen Sie eine Frage...",
-        "file_msg": "*(Datei: {name})*",
-        "ai_confirm": "Erhalten. Was möchten Sie wissen?",
-        "sys_prompt": "Antworten Sie ausschließlich auf Deutsch."
-    },
-    # Taliansky, Španielsky, Francúzsky atď. sa sem pridajú rovnako
-    "IT": {"title": "🤖 Tutor IA", "up_button": "Carica", "up_prompt": "o trascina file (PDF, DOCX)", "send_file": "Invia ⬆️", "input": "Fai una domanda...", "file_msg": "*(File: {name})*", "ai_confirm": "Ricevuto. Cosa vuoi sapere?", "sys_prompt": "Rispondi esclusivamente in italiano."},
-    "ES": {"title": "🤖 Tutor IA", "up_button": "Subir", "up_prompt": "o arrastra archivo (PDF, DOCX)", "send_file": "Enviar ⬆️", "input": "Haz una pregunta...", "file_msg": "*(Archivo: {name})*", "ai_confirm": "Recibido. ¿Qué quieres saber?", "sys_prompt": "Responde exclusivamente en español."},
-    "FR": {"title": "🤖 Tuteur IA", "up_button": "Charger", "up_prompt": "ou faites glisser le fichier (PDF, DOCX)", "send_file": "Envoyer ⬆️", "input": "Posez une question...", "file_msg": "*(Fichier: {name})*", "ai_confirm": "Reçu. Que voulez-vous savoir ?", "sys_prompt": "Répondez exclusivement en français."},
-    "UA": {"title": "🤖 AI Тьютор", "up_button": "Завантажити", "up_prompt": "або перетягніть файл (PDF, DOCX)", "send_file": "Надіслати ⬆️", "input": "Запитайте щось...", "file_msg": "*(Файл: {name})*", "ai_confirm": "Отримано. Що ви хочете знати?", "sys_prompt": "Відповідайте виключно українською мовою."},
-    "RU": {"title": "🤖 AI Тьютор", "up_button": "Загрузить", "up_prompt": "или перетащите файл (PDF, DOCX)", "send_file": "Отправить ⬆️", "input": "Задайте вопрос...", "file_msg": "*(Файл: {name})*", "ai_confirm": "Получено. Что вы хотите знать?", "sys_prompt": "Отвечайте исключительно на русском языке."}
+    "SK": {"title": "🤖 AI Tutor", "up_button": "Nahrať súbor", "up_prompt": "PDF alebo DOCX", "send_file": "Odoslať ⬆️", "input": "Napíš otázku k dokumentu...", "file_msg": "*(Súbor: {name})*", "ai_confirm": "Prijaté. Čo chceš vedieť?", "sys_prompt": "Odpovedaj výhradne v slovenskom jazyku."},
+    "EN": {"title": "🤖 AI Tutor", "up_button": "Upload file", "up_prompt": "PDF or DOCX", "send_file": "Send ⬆️", "input": "Ask a question...", "file_msg": "*(File: {name})*", "ai_confirm": "Received. What do you want to know?", "sys_prompt": "Answer exclusively in English."},
+    "DE": {"title": "🤖 KI-Tutor", "up_button": "Hochladen", "up_prompt": "PDF oder DOCX", "send_file": "Senden ⬆️", "input": "Stellen Sie eine Frage...", "file_msg": "*(Datei: {name})*", "ai_confirm": "Erhalten. Was möchten Sie wissen?", "sys_prompt": "Antworten Sie ausschließlich auf Deutsch."},
+    "IT": {"title": "🤖 Tutor IA", "up_button": "Carica", "up_prompt": "PDF o DOCX", "send_file": "Invia ⬆️", "input": "Fai una domanda...", "file_msg": "*(File: {name})*", "ai_confirm": "Ricevuto. Cosa vuoi sapere?", "sys_prompt": "Rispondi esclusivamente in italiano."},
+    "ES": {"title": "🤖 Tutor IA", "up_button": "Subir", "up_prompt": "PDF o DOCX", "send_file": "Enviar ⬆️", "input": "Haz una pregunta...", "file_msg": "*(Archivo: {name})*", "ai_confirm": "Recibido. ¿Qué quieres saber?", "sys_prompt": "Responde exclusivamente en español."},
+    "FR": {"title": "🤖 Tuteur IA", "up_button": "Charger", "up_prompt": "PDF ou DOCX", "send_file": "Envoyer ⬆️", "input": "Posez une question...", "file_msg": "*(Fichier: {name})*", "ai_confirm": "Reçu. Que voulez-vous savoir ?", "sys_prompt": "Répondez exclusivement en français."},
+    "UA": {"title": "🤖 AI Тьютор", "up_button": "Завантажити", "up_prompt": "PDF або DOCX", "send_file": "Надіслати ⬆️", "input": "Запитайте щось...", "file_msg": "*(Файл: {name})*", "ai_confirm": "Отримано. Що ви хочете знати?", "sys_prompt": "Відповідайте виключно українською мовою."},
+    "RU": {"title": "🤖 AI Тьютор", "up_button": "Загрузить", "up_prompt": "PDF или DOCX", "send_file": "Отправить ⬆️", "input": "Задайте вопрос...", "file_msg": "*(Файл: {name})*", "ai_confirm": "Получено. Что вы хотите знать?", "sys_prompt": "Отвечайте исключительно на русском языке."}
 }
 T = texty.get(jazyk, texty["SK"])
 
-# 3. DIZAJN + CSS (Trik na preklad nahrávacieho boxu)
+# 3. DIZAJN + OPRAVENÉ CSS (Preklady v rámčeku)
 st.set_page_config(page_title=T["title"], layout="wide")
 
 st.markdown(f"""
     <style>
-    /* Skryje hlavnú lištu a pätu */
     header, footer {{visibility: hidden;}} 
     .stAppDeployButton {{display:none;}}
     
-    /* PREKLAD NAHRÁVACIEHO BOXU */
-    /* Nápis na tlačidle (Upload) */
-    div[data-testid="stFileUploader"] section > div[data-testid="stMarkdownContainer"] button::before {{
+    /* Úprava celého uploaderu */
+    div[data-testid="stFileUploader"] section {{
+        padding: 1rem;
+    }}
+
+    /* Preklad tlačidla 'Browse files' */
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"] {{
+        color: transparent !important;
+        position: relative;
+    }}
+    div[data-testid="stFileUploader"] button[data-testid="baseButton-secondary"]::after {{
         content: "{T['up_button']}";
-        font-weight: bold;
+        color: black;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
     }}
-    div[data-testid="stFileUploader"] section > div[data-testid="stMarkdownContainer"] button {{
-        color: transparent;
-    }}
-    
-    /* Zvýraznený text (Limit 200MB...) a prompt (Drag & Drop) */
-    /* Tento kód skryje pôvodné anglické texty */
+
+    /* Skrytie Limit 200MB a Drag and Drop */
     div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"] p {{
-        visibility: hidden;
+        display: none;
     }}
-    
-    /* Tento kód vloží tvoj preložený text na ich miesto */
-    div[data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"]::before {{
+
+    /* Vloženie nového textu namiesto nich priamo do rámčeka */
+    div[data-testid="stFileUploader"] section > div {{
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }}
+    div[data-testid="stFileUploader"] section::after {{
         content: "{T['up_prompt']}";
-        visibility: visible;
-        display: block;
         color: #555;
         font-size: 14px;
-        margin-top: -15px; /* Zarovnanie */
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -107,7 +90,7 @@ with chat_container:
 
 st.write("---")
 
-# 5. SPODNÝ PANEL (Uploader a tlačidlo)
+# 5. SPODNÝ PANEL
 with st.container():
     col1, col2 = st.columns([4, 1])
     with col1:
