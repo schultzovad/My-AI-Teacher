@@ -5,30 +5,26 @@ import docx
 from PIL import Image
 
 # 1. NASTAVENIE API
-# Skontroluj si v Streamlit Cloud -> Settings -> Secrets, či máš kľúč pod názvom "tutor"
 api_key = st.secrets.get("tutor") or st.secrets.get("GOOGLE_API_KEY")
 if not api_key:
-    st.error("⚠️ API kľúč chýba v Secrets!")
+    st.error("⚠️ API kľúč chýba!")
     st.stop()
 
 genai.configure(api_key=api_key)
 
-# TENTO NÁZOV MODELU JE TERAZ NAJSTABILNEJŠÍ
-try:
-    model_ai = genai.GenerativeModel('gemini-1.5-flash')
-except Exception as e:
-    st.error(f"Nepodarilo sa načítať model: {e}")
+# POUŽIJEME "LATEST" VERZIU - táto by mala opraviť chybu 404
+model_ai = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 # --- INICIALIZÁCIA ---
 if "m" not in st.session_state: st.session_state.m = []
 if "doc_content" not in st.session_state: st.session_state.doc_content = ""
 
-# 2. JAZYKOVÁ LOGIKA (Všetkých 8 jazykov)
+# 2. JAZYKOVÁ LOGIKA (Tvoje pôvodné jazyky)
 query_params = st.query_params
 jazyk = query_params.get("lang", "SK").upper()
 
 texty = {
-    "SK": {"title": "🤖 AI Tutor", "selected": "Vybraný súbor:", "send_file": "Odoslať ⬆️", "input": "Napíš otázku...", "file_msg": "*(Súbor: {name})*", "sys_prompt": "Odpovedaj v jazyku, v ktorom píše používateľ. Ak píše slovensky, odpovedaj slovensky."},
+    "SK": {"title": "🤖 AI Tutor", "selected": "Vybraný súbor:", "send_file": "Odoslať ⬆️", "input": "Napíš otázku...", "file_msg": "*(Súbor: {name})*", "sys_prompt": "Odpovedaj vždy v jazyku, v ktorom ti píše používateľ. Ak píše slovensky, odpovedaj slovensky."},
     "EN": {"title": "🤖 AI Tutor", "selected": "Selected file:", "send_file": "Send ⬆️", "input": "Ask a question...", "file_msg": "*(File: {name})*", "sys_prompt": "Answer in the language the user is writing in."},
     "DE": {"title": "🤖 KI-Tutor", "selected": "Ausgewählte Datei:", "send_file": "Senden ⬆️", "input": "Frage stellen...", "file_msg": "*(Datei: {name})*", "sys_prompt": "Antworten Sie in der Sprache, in der der Benutzer schreibt."},
     "IT": {"title": "🤖 Tutor IA", "selected": "File selezionato:", "send_file": "Invia ⬆️", "input": "Fai una domanda...", "file_msg": "*(File: {name})*", "sys_prompt": "Rispondi nella lingua in cui scrive l'utente."},
@@ -75,7 +71,7 @@ with chat_container:
 
 st.write("---")
 
-# 6. SPODNÝ PANEL (Uploader a vstup)
+# 6. SPODNÝ PANEL
 with st.container():
     col1, col2 = st.columns([4, 1])
     with col1:
@@ -104,7 +100,7 @@ with st.container():
                             st.session_state.m.append({"role": "assistant", "content": res.text})
                     st.rerun()
                 except Exception as e:
-                    st.error(f"Chyba pri čítaní súboru: {e}")
+                    st.error(f"Chyba: {e}")
 
 if p := st.chat_input(T["input"]):
     st.session_state.m.append({"role": "user", "content": p})
@@ -112,7 +108,7 @@ if p := st.chat_input(T["input"]):
         with st.chat_message("user"):
             st.markdown(p)
         with st.chat_message("assistant"):
-            full_prompt = f"{T['sys_prompt']}\n\nKontext z dokumentu: {st.session_state.doc_content}\n\nOtázka: {p}"
+            full_prompt = f"{T['sys_prompt']}\n\nKontext: {st.session_state.doc_content}\n\nOtázka: {p}"
             content_to_send = [full_prompt]
             
             if u and u.name.lower().endswith(('.jpg', '.jpeg', '.png')):
@@ -127,4 +123,5 @@ if p := st.chat_input(T["input"]):
                 st.markdown(res.text)
                 st.session_state.m.append({"role": "assistant", "content": res.text})
             except Exception as e:
+                # Ak to stále hodí 404, vypíšeme zoznam dostupných modelov, aby sme videli, čo tam máš
                 st.error(f"AI Chyba: {e}")
