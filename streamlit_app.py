@@ -11,7 +11,7 @@ if not api_key:
     st.stop()
 
 genai.configure(api_key=api_key)
-model_ai = genai.GenerativeModel('gemini-1.5-flash')
+model_ai = genai.GenerativeModel('gemini-1.5-pro')
 
 # --- INICIALIZÁCIA ---
 if "m" not in st.session_state: st.session_state.m = []
