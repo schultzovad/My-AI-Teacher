@@ -37,14 +37,14 @@ def hash_password(password):
 
 # --- JAZYKOVÉ DATA ---
 lang_data = {
-    "SK": {"title": "👥 Študijné skupiny", "label": "Názov skupiny", "btn": "Vytvoriť", "login": "Prihlásenie učiteľa", "register": "Registrácia nového učiteľa", "logout": "Odhlásiť sa"},
-    "EN": {"title": "👥 Study Groups", "label": "Group name", "btn": "Create", "login": "Teacher Login", "register": "Teacher Registration", "logout": "Log out"},
-    "DE": {"title": "👥 Studiengruppen", "label": "Name", "btn": "Erstellen", "login": "Lehrer-Login", "register": "Lehrer-Registrierung", "logout": "Abmelden"},
+    "SK": {"title": "👥 Študijné skupiny", "label": "Názov skupiny", "btn": "Vytvoriť", "login": "Prihlásenie", "register": "Registrácia", "logout": "Odhlásiť sa"},
+    "EN": {"title": "👥 Study Groups", "label": "Group name", "btn": "Create", "login": "Login", "register": "Registration", "logout": "Log out"},
+    "DE": {"title": "👥 Studiengruppen", "label": "Name", "btn": "Erstellen", "login": "Login", "register": "Registrierung", "logout": "Abmelden"},
     "ES": {"title": "👥 Grupos", "label": "Nombre", "btn": "Crear", "login": "Iniciar sesión", "register": "Registrarse", "logout": "Cerrar sesión"},
     "FR": {"title": "👥 Groupes", "label": "Nom", "btn": "Créer", "login": "Connexion", "register": "Inscription", "logout": "Déconnexion"},
     "IT": {"title": "👥 Gruppi", "label": "Nome", "btn": "Crea", "login": "Accesso", "register": "Registrazione", "logout": "Disconnetti"},
-    "UA": {"title": "👥 Групи", "label": "Назва", "btn": "Створити", "login": "Вхід для вчителів", "register": "Реєстрація вчителя", "logout": "Вийти"},
-    "RU": {"title": "👥 Группы", "label": "Название", "btn": "Создать", "login": "Вход для учителей", "register": "Регистрация учителя", "logout": "Выйти"}
+    "UA": {"title": "👥 Групи", "label": "Назва", "btn": "Створити", "login": "Вхід", "register": "Реєстрація", "logout": "Вийти"},
+    "RU": {"title": "👥 Группы", "label": "Название", "btn": "Создать", "login": "Вход", "register": "Регистрация", "logout": "Выйти"}
 }
 
 L = st.query_params.get("lang", "SK")
