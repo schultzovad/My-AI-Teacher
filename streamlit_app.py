@@ -10,7 +10,7 @@ if not api_key:
     st.error("⚠️ API kľúč chýba!")
     st.stop()
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+genai.configure(api_key=api_key)
 
 # POUŽÍVAME MODEL Z TVOJHO ZOZNAMU
 MODEL_NAME = 'gemini-3.1-flash-lite'
