@@ -85,9 +85,9 @@ if not st.session_state.teacher_logged_in:
                 
     with tab2:
         st.subheader(t["register"])
-        reg_name = st.text_input("Meno / Name", key="r_name")
+        reg_name = st.text_input("Meno", key="r_name")
         reg_email = st.text_input("Email", key="r_email")
-        reg_pwd = st.text_input("Heslo / Password", type="password", key="r_pwd")
+        reg_pwd = st.text_input("Heslo", type="password", key="r_pwd")
         
         if st.button(t["register"], key="btn_reg_main"):
             if reg_name and reg_email and reg_pwd:
