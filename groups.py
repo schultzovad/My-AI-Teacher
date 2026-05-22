@@ -66,7 +66,7 @@ if not st.session_state.teacher_logged_in:
     with tab1:
         st.subheader(t["login"])
         login_email = st.text_input("Email", key="l_email")
-        login_pwd = st.text_input("Heslo / Password", type="password", key="l_pwd")
+        login_pwd = st.text_input("Heslo", type="password", key="l_pwd")
         
         if st.button(t["login"], key="btn_login_main"):
             conn = sqlite3.connect(DB_NAME)
