@@ -80,7 +80,6 @@ if role == "Žiak":
                 conn = sqlite3.connect(DB_NAME)
                 user = conn.execute("SELECT id, name FROM students WHERE name=? AND password=?", (name, hash_pwd(pwd))).fetchone()
                 if user: st.session_state.st_id, st.session_state.st_name = user; st.rerun()
-                else: st.error("Zlé meno alebo heslo.")
                 conn.close()
         with tab2:
             name = st.text_input("Meno", key="st_reg_name")
@@ -93,16 +92,10 @@ if role == "Žiak":
                     cursor.execute("INSERT INTO students (name, email, password) VALUES (?, ?, ?)", (name, em, hash_pwd(pw)))
                     st.session_state.st_id = cursor.lastrowid; st.session_state.st_name = name
                     conn.commit(); conn.close(); st.rerun()
-                except sqlite3.IntegrityError: conn.close(); st.error("Meno už existuje.")
+                except: st.error("Meno už existuje.")
     else:
         st.subheader(f"Vitaj, {st.session_state.st_name}")
         if st.button("Odhlásiť"): st.session_state.st_id = None; st.rerun()
-        if st.button("❌ Zmazať môj účet"): st.session_state.confirm_del_acc = True
-        if st.session_state.get("confirm_del_acc"):
-            if st.button("Naozaj zmazať účet?"):
-                conn = sqlite3.connect(DB_NAME)
-                conn.execute("DELETE FROM students WHERE id=?", (st.session_state.st_id,)); conn.commit(); conn.close()
-                st.session_state.st_id = None; st.session_state.confirm_del_acc = False; st.rerun()
         
         kod = st.text_input("Kód skupiny:")
         if st.button("Vstúpiť"):
@@ -162,8 +155,16 @@ else: # Učiteľ
         skupiny = conn.execute("SELECT id, group_name, group_code FROM groups WHERE teacher_id=?", (st.session_state.tch_id,)).fetchall()
         for s in skupiny:
             with st.expander(f"📁 {s[1]} (Kód: {s[2]})"):
-                if st.button("Zmazať skupinu", key=f"del_{s[0]}"): 
-                    conn.execute("DELETE FROM groups WHERE id=?", (s[0],)); conn.commit(); st.rerun()
+                # ZOZNAM ŽIAKOV
+                st.write("**Žiaci v skupine:**")
+                ziaci = conn.execute("SELECT s.id, s.name FROM students s JOIN group_members gm ON s.id=gm.student_id WHERE gm.group_id=?", (s[0],)).fetchall()
+                for z in ziaci:
+                    col1, col2 = st.columns([8, 2])
+                    col1.write(f"👤 {z[1]}")
+                    if col2.button("Vyhodiť", key=f"kick_{s[0]}_{z[0]}"):
+                        conn.execute("DELETE FROM group_members WHERE group_id=? AND student_id=?", (s[0], z[0])); conn.commit(); st.rerun()
+                st.write("---")
+                # MATERIÁLY
                 st.write("**Materiály:**")
                 mats = conn.execute("SELECT id, title, link, file_path_on_cloud FROM materials WHERE group_id=?", (s[0],)).fetchall()
                 for m in mats:
@@ -175,4 +176,6 @@ else: # Učiteľ
                 if up_file and st.button("Nahrať", key=f"ub_{s[0]}"):
                     url, path = upload_to_supabase(up_file.getvalue(), up_file.name, up_file.type)
                     conn.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?,?,?,?,?)", (up_file.name, url, s[0], path, st.session_state.tch_name)); conn.commit(); st.rerun()
+                if st.button("Zmazať skupinu", key=f"del_{s[0]}"): 
+                    conn.execute("DELETE FROM groups WHERE id=?", (s[0],)); conn.commit(); st.rerun()
         conn.close()
