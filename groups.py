@@ -161,7 +161,7 @@ else: # Učiteľ
                 for z in ziaci:
                     col1, col2 = st.columns([8, 2])
                     col1.write(f"👤 {z[1]}")
-                    if col2.button("Vyhodiť", key=f"kick_{s[0]}_{z[0]}"):
+                    if col2.button("Odobrať", key=f"kick_{s[0]}_{z[0]}"):
                         conn.execute("DELETE FROM group_members WHERE group_id=? AND student_id=?", (s[0], z[0])); conn.commit(); st.rerun()
                 st.write("---")
                 # MATERIÁLY
