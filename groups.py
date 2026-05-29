@@ -65,7 +65,7 @@ if role == "Žiak":
                 try:
                     conn = sqlite3.connect(DB_NAME)
                     conn.execute("INSERT INTO students (name, email, password) VALUES (?, ?, ?)", (name, em, hash_pwd(pw)))
-                    conn.commit(); conn.close(); st.success("Registrácia OK!")
+                    conn.commit(); conn.close(); st.success("Registrácia OK!"); st.rerun()
                 except: st.error("Meno alebo email už existuje.")
     else:
         st.write(f"### {st.session_state.st_name}")
@@ -80,9 +80,10 @@ if role == "Žiak":
                     conn.execute("INSERT INTO group_members (group_id, student_id) VALUES (?, ?)", (g[0], st.session_state.st_id))
                     conn.commit()
                 except: pass
-                st.session_state.open_group = g[0]; st.rerun()
-            else: st.error("Kód neexistuje.")
-            conn.close()
+                st.session_state.open_group = g[0]
+                conn.close()
+                st.rerun() # Toto vyčistí pole 'kod'
+            else: st.error("Kód neexistuje."); conn.close()
         
         conn = sqlite3.connect(DB_NAME)
         skupiny = conn.execute("SELECT g.id, g.group_name FROM groups g JOIN group_members gm ON g.id=gm.group_id WHERE gm.student_id=?", (st.session_state.st_id,)).fetchall()
@@ -93,7 +94,6 @@ if role == "Žiak":
                 for m in mats:
                     c1, c2 = st.columns([8, 2])
                     c1.markdown(f"• [{m[1]}]({m[2]}) (nahral: {m[4]})")
-                    # Tlačidlo zmazať sa zobrazí len ak žiak súbor nahral
                     if m[4] == st.session_state.st_name:
                         if c2.button("❌ Zmazať", key=f"del_st_{m[0]}"):
                             delete_from_supabase(m[3])
@@ -128,7 +128,7 @@ else: # Učiteľ
                 try:
                     conn = sqlite3.connect(DB_NAME)
                     conn.execute("INSERT INTO teachers (name, email, password) VALUES (?, ?, ?)", (name, em, hash_pwd(pw)))
-                    conn.commit(); conn.close(); st.success("Registrácia OK!")
+                    conn.commit(); conn.close(); st.success("Registrácia OK!"); st.rerun()
                 except: st.error("Meno alebo email už existuje.")
     else:
         st.write(f"### {st.session_state.tch_name}")
