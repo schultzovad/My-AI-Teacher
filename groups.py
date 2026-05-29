@@ -66,14 +66,15 @@ if role == "Žiak":
             em = st.text_input("Email", key="st_reg_em")
             pw = st.text_input("Heslo", type="password", key="st_reg_pw")
             if st.button("Registrovať"):
+                conn = sqlite3.connect(DB_NAME)
                 try:
-                    conn = sqlite3.connect(DB_NAME)
                     cursor = conn.cursor()
                     cursor.execute("INSERT INTO students (name, email, password) VALUES (?, ?, ?)", (name, em, hash_pwd(pw)))
                     st.session_state.st_id = cursor.lastrowid
                     st.session_state.st_name = name
                     conn.commit(); conn.close(); st.rerun()
-                except: st.error("Meno alebo email už existuje.")
+                except sqlite3.IntegrityError: 
+                    conn.close(); st.error("Toto meno alebo email už v databáze existuje. Skús iné.")
     else:
         st.write(f"### {st.session_state.st_name}")
         c1, c2 = st.columns([1, 1])
@@ -131,14 +132,15 @@ else: # Učiteľ
             em = st.text_input("Email", key="tch_reg_em")
             pw = st.text_input("Heslo", type="password", key="tch_reg_pw")
             if st.button("Registrovať"):
+                conn = sqlite3.connect(DB_NAME)
                 try:
-                    conn = sqlite3.connect(DB_NAME)
                     cursor = conn.cursor()
                     cursor.execute("INSERT INTO teachers (name, email, password) VALUES (?, ?, ?)", (name, em, hash_pwd(pw)))
                     st.session_state.tch_id = cursor.lastrowid
                     st.session_state.tch_name = name
                     conn.commit(); conn.close(); st.rerun()
-                except: st.error("Meno alebo email už existuje.")
+                except sqlite3.IntegrityError: 
+                    conn.close(); st.error("Toto meno alebo email už v databáze existuje.")
     else:
         st.write(f"### {st.session_state.tch_name}")
         c1, c2 = st.columns([1, 1])
@@ -162,7 +164,7 @@ else: # Učiteľ
             with st.expander(f"📁 {s[1]} (Kód: {s[2]})"):
                 if st.button("Zmazať celú skupinu", key=f"del_{s[0]}"): conn.execute("DELETE FROM groups WHERE id=?", (s[0],)); conn.commit(); st.rerun()
                 
-                st.write("**Žiaci v skupine:**")
+                st.write("**Žiaci:**")
                 ziaci = conn.execute("SELECT s.id, s.name FROM students s JOIN group_members gm ON s.id=gm.student_id WHERE gm.group_id=?", (s[0],)).fetchall()
                 for z in ziaci:
                     c1, c2 = st.columns([8, 2])
