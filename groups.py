@@ -266,4 +266,21 @@ else:
                 mat_link = st.text_input("Odkaz (URL):")
                 if st.button("Zdieľať odkaz"):
                     if mat_title and mat_link:
-                        cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, NULL, 'Uč
+                        cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, NULL, 'Učiteľ')", (mat_title, mat_link, vybrana_skupina_id))
+                        conn.commit()
+                        st.rerun()
+            
+            cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
+            skupina_materialy = cursor.fetchall()
+            if skupina_materialy:
+                for m in skupina_materialy:
+                    c1, c2 = st.columns([8, 2])
+                    with c1:
+                        st.markdown(f"🔗 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
+                    with c2:
+                        if st.button("❌ Zmazať", key=f"del_tch_{m[0]}"):
+                            if m[3]: delete_from_supabase(m[3])
+                            cursor.execute("DELETE FROM materials WHERE id = ?", (m[0],))
+                            conn.commit()
+                            st.rerun()
+        conn.close()
