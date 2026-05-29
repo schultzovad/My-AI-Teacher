@@ -17,8 +17,8 @@ DB_NAME = "tutor_platform.db"
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS teachers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, email TEXT UNIQUE, password TEXT)')
-    cursor.execute('CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, email TEXT UNIQUE, password TEXT)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS teachers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, email TEXT, password TEXT)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, email TEXT, password TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, group_code TEXT UNIQUE, teacher_id INTEGER)')
     cursor.execute('CREATE TABLE IF NOT EXISTS group_members (group_id INTEGER, student_id INTEGER, UNIQUE(group_id, student_id))')
     cursor.execute('CREATE TABLE IF NOT EXISTS materials (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, link TEXT, group_id INTEGER, file_path_on_cloud TEXT, uploaded_by TEXT)')
@@ -74,7 +74,7 @@ if role == "Žiak":
                     st.session_state.st_name = name
                     conn.commit(); conn.close(); st.rerun()
                 except sqlite3.IntegrityError: 
-                    conn.close(); st.error("Toto meno alebo email už v databáze existuje. Skús iné.")
+                    conn.close(); st.error("Meno už existuje. Vyber si iné.")
     else:
         st.write(f"### {st.session_state.st_name}")
         c1, c2 = st.columns([1, 1])
@@ -140,7 +140,7 @@ else: # Učiteľ
                     st.session_state.tch_name = name
                     conn.commit(); conn.close(); st.rerun()
                 except sqlite3.IntegrityError: 
-                    conn.close(); st.error("Toto meno alebo email už v databáze existuje.")
+                    conn.close(); st.error("Meno už existuje. Vyber si iné.")
     else:
         st.write(f"### {st.session_state.tch_name}")
         c1, c2 = st.columns([1, 1])
@@ -164,7 +164,7 @@ else: # Učiteľ
             with st.expander(f"📁 {s[1]} (Kód: {s[2]})"):
                 if st.button("Zmazať celú skupinu", key=f"del_{s[0]}"): conn.execute("DELETE FROM groups WHERE id=?", (s[0],)); conn.commit(); st.rerun()
                 
-                st.write("**Žiaci:**")
+                st.write("**Žiaci v skupine:**")
                 ziaci = conn.execute("SELECT s.id, s.name FROM students s JOIN group_members gm ON s.id=gm.student_id WHERE gm.group_id=?", (s[0],)).fetchall()
                 for z in ziaci:
                     c1, c2 = st.columns([8, 2])
@@ -172,6 +172,13 @@ else: # Učiteľ
                     if c2.button("Odobrať", key=f"rem_{s[0]}_{z[0]}"):
                         conn.execute("DELETE FROM group_members WHERE group_id=? AND student_id=?", (s[0], z[0])); conn.commit(); st.rerun()
                 
+                st.write("**Nahrať materiál:**")
+                up_file = st.file_uploader(f"Nahrať do {s[1]}", key=f"file_{s[0]}")
+                if up_file and st.button(f"Nahrať", key=f"btn_{s[0]}"):
+                    url, path = upload_to_supabase(up_file.getvalue(), up_file.name, up_file.type)
+                    conn.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, ?)", (up_file.name, url, s[0], path, st.session_state.tch_name))
+                    conn.commit(); st.rerun()
+
                 st.write("**Materiály:**")
                 mats = conn.execute("SELECT id, title, link, file_path_on_cloud FROM materials WHERE group_id=?", (s[0],)).fetchall()
                 for m in mats:
