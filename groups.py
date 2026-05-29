@@ -69,9 +69,6 @@ def delete_from_supabase(path):
 st.title("🎓 Školský portál")
 role = st.radio("Zvoľ si rolu:", ["Žiak", "Učiteľ"], horizontal=True)
 
-if 'input_group_name' not in st.session_state: st.session_state.input_group_name = ""
-if 'input_join_code' not in st.session_state: st.session_state.input_join_code = ""
-
 if role == "Žiak":
     if "st_id" not in st.session_state: st.session_state.st_id = None
     if not st.session_state.st_id:
@@ -94,8 +91,7 @@ if role == "Žiak":
                 try:
                     cursor = conn.cursor()
                     cursor.execute("INSERT INTO students (name, email, password) VALUES (?, ?, ?)", (name, em, hash_pwd(pw)))
-                    st.session_state.st_id = cursor.lastrowid
-                    st.session_state.st_name = name
+                    st.session_state.st_id = cursor.lastrowid; st.session_state.st_name = name
                     conn.commit(); conn.close(); st.rerun()
                 except sqlite3.IntegrityError: conn.close(); st.error("Meno už existuje.")
     else:
@@ -137,17 +133,16 @@ if role == "Žiak":
 else: # Učiteľ
     if "tch_id" not in st.session_state: st.session_state.tch_id = None
     if not st.session_state.tch_id:
-        # (Prihlasovacia logika pre učiteľa je rovnaká ako u žiaka, len nad tabuľkou teachers)
         tab1, tab2 = st.tabs(["Prihlásiť", "Registrovať"])
         with tab1:
-            name = st.text_input("Meno", key="tch_name"); pw = st.text_input("Heslo", type="password", key="tch_pw")
+            name = st.text_input("Meno", key="tch_n"); pw = st.text_input("Heslo", type="password", key="tch_p")
             if st.button("Prihlásiť"):
                 conn = sqlite3.connect(DB_NAME)
                 user = conn.execute("SELECT id, name FROM teachers WHERE name=? AND password=?", (name, hash_pwd(pw))).fetchone()
                 if user: st.session_state.tch_id, st.session_state.tch_name = user; st.rerun()
                 conn.close()
         with tab2:
-            name = st.text_input("Meno", key="tr_name"); em = st.text_input("Email", key="tr_em"); pw = st.text_input("Heslo", type="password", key="tr_pw")
+            name = st.text_input("Meno", key="tr_n"); em = st.text_input("Email", key="tr_e"); pw = st.text_input("Heslo", type="password", key="tr_p")
             if st.button("Registrovať"):
                 conn = sqlite3.connect(DB_NAME)
                 try:
@@ -159,20 +154,24 @@ else: # Učiteľ
     else:
         st.subheader(f"Učiteľ: {st.session_state.tch_name}")
         if st.button("Odhlásiť"): st.session_state.tch_id = None; st.rerun()
-        
         n = st.text_input("Názov novej skupiny")
         if st.button("Vytvoriť skupinu"):
             conn = sqlite3.connect(DB_NAME)
             conn.execute("INSERT INTO groups (group_name, group_code, teacher_id) VALUES (?, ?, ?)", (n, gen_code(), st.session_state.tch_id)); conn.commit(); conn.close(); st.rerun()
-            
         conn = sqlite3.connect(DB_NAME)
         skupiny = conn.execute("SELECT id, group_name, group_code FROM groups WHERE teacher_id=?", (st.session_state.tch_id,)).fetchall()
         for s in skupiny:
             with st.expander(f"📁 {s[1]} (Kód: {s[2]})"):
                 if st.button("Zmazať skupinu", key=f"del_{s[0]}"): 
                     conn.execute("DELETE FROM groups WHERE id=?", (s[0],)); conn.commit(); st.rerun()
-                st.write("**Nahrať:**")
-                up_file = st.file_uploader(f"Materiál pre {s[1]}", key=f"uf_{s[0]}")
+                st.write("**Materiály:**")
+                mats = conn.execute("SELECT id, title, link, file_path_on_cloud FROM materials WHERE group_id=?", (s[0],)).fetchall()
+                for m in mats:
+                    c1, c2 = st.columns([8, 2])
+                    c1.markdown(f"• [{m[1]}]({m[2]})")
+                    if c2.button("❌ Zmazať", key=f"del_m_{m[0]}"):
+                        delete_from_supabase(m[3]); conn.execute("DELETE FROM materials WHERE id=?", (m[0],)); conn.commit(); st.rerun()
+                up_file = st.file_uploader(f"Nahrať do {s[1]}", key=f"uf_{s[0]}")
                 if up_file and st.button("Nahrať", key=f"ub_{s[0]}"):
                     url, path = upload_to_supabase(up_file.getvalue(), up_file.name, up_file.type)
                     conn.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?,?,?,?,?)", (up_file.name, url, s[0], path, st.session_state.tch_name)); conn.commit(); st.rerun()
