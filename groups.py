@@ -120,17 +120,38 @@ else: # Učiteľ
     else:
         st.write(f"### {st.session_state.tch_name}")
         if st.button("Odhlásiť"): st.session_state.tch_id = None; st.rerun()
+        
         n = st.text_input("Názov novej skupiny")
         if st.button("Vytvoriť skupinu"):
             conn = sqlite3.connect(DB_NAME)
             conn.execute("INSERT INTO groups (group_name, group_code, teacher_id) VALUES (?, ?, ?)", (n, gen_code(), st.session_state.tch_id))
             conn.commit(); conn.close(); st.rerun()
+            
         conn = sqlite3.connect(DB_NAME)
         skupiny = conn.execute("SELECT id, group_name, group_code FROM groups WHERE teacher_id=?", (st.session_state.tch_id,)).fetchall()
         for s in skupiny:
             with st.expander(f"📁 {s[1]} (Kód: {s[2]})"):
+                new_n = st.text_input("Nový názov:", value=s[1], key=f"n_{s[0]}")
+                if st.button("Premenovať", key=f"upd_{s[0]}"):
+                    conn.execute("UPDATE groups SET group_name=? WHERE id=?", (new_n, s[0])); conn.commit(); st.rerun()
+                
                 st.write("Žiaci v skupine:")
-                ziaci = conn.execute("SELECT s.name FROM students s JOIN group_members gm ON s.id=gm.student_id WHERE gm.group_id=?", (s[0],)).fetchall()
-                for z in ziaci: st.write(f"• {z[0]}")
-                # ... zvyšok mazania a materiálov ako predtým
+                ziaci = conn.execute("SELECT s.id, s.name FROM students s JOIN group_members gm ON s.id=gm.student_id WHERE gm.group_id=?", (s[0],)).fetchall()
+                for z in ziaci:
+                    c1, c2 = st.columns([8, 2])
+                    c1.write(f"• {z[1]}")
+                    if c2.button("Odobrať", key=f"rem_{s[0]}_{z[0]}"):
+                        conn.execute("DELETE FROM group_members WHERE group_id=? AND student_id=?", (s[0], z[0])); conn.commit(); st.rerun()
+                
+                st.write("Materiály:")
+                mats = conn.execute("SELECT id, title, link, file_path_on_cloud FROM materials WHERE group_id=?", (s[0],)).fetchall()
+                for m in mats:
+                    c1, c2 = st.columns([8, 2])
+                    c1.markdown(f"• [{m[1]}]({m[2]})")
+                    if c2.button("❌ Zmazať", key=f"del_m_{m[0]}"):
+                        delete_from_supabase(m[3])
+                        conn.execute("DELETE FROM materials WHERE id=?", (m[0],)); conn.commit(); st.rerun()
+                
+                if st.button("Zmazať celú skupinu", key=f"del_{s[0]}"):
+                    conn.execute("DELETE FROM groups WHERE id=?", (s[0],)); conn.commit(); st.rerun()
         conn.close()
