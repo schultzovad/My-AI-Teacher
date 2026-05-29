@@ -4,3 +4,5 @@ Pillow
 streamlit-option-menu
 pypdf
 python-docx
+requests
+supabase
