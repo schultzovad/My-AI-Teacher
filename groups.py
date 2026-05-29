@@ -59,6 +59,10 @@ def generate_group_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 def upload_to_supabase(file_bytes, file_name, mime_type):
+    """Odošle súbor priamo do Supabase Storage a ošetrí výpadky siete."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None, None
+        
     clean_name = "".join(c for c in file_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
     url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{unique_name}"
@@ -67,10 +71,16 @@ def upload_to_supabase(file_bytes, file_name, mime_type):
         "API-KEY": SUPABASE_KEY,
         "Content-Type": mime_type
     }
-    response = requests.post(url, headers=headers, data=file_bytes)
-    if response.status_code == 200:
-        public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{unique_name}"
-        return public_url, unique_name
+    
+    try:
+        response = requests.post(url, headers=headers, data=file_bytes, timeout=10)
+        if response.status_code == 200:
+            public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{unique_name}"
+            return public_url, unique_name
+    except requests.exceptions.RequestException:
+        # Ak zlyhá sieť alebo Supabase neodpovedá, aplikácia nespadne, iba vráti prázdne hodnoty
+        pass
+        
     return None, None
 
 def delete_from_supabase(file_path):
@@ -79,8 +89,11 @@ def delete_from_supabase(file_path):
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "API-KEY": SUPABASE_KEY
     }
-    response = requests.delete(url, headers=headers)
-    return response.status_code == 200
+    try:
+        response = requests.delete(url, headers=headers, timeout=10)
+        return response.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
 
 # --- JAZYKOVÉ DATA ---
 lang_data = {
@@ -119,7 +132,7 @@ if user_role == t["role_student"]:
             st.subheader("📤 Odovzdať môj súbor do skupiny")
             student_file = st.file_uploader("Vyber svoj súbor:", key="file_uploader_student")
             if st.button("Poslať súbor spolužiakom a učiteľovi"):
-                if student_file is not None and SUPABASE_URL and SUPABASE_KEY:
+                if student_file is not None:
                     with st.spinner("Nahrávam tvoju prácu..."):
                         file_bytes = student_file.getvalue()
                         public_link, cloud_path = upload_to_supabase(file_bytes, student_file.name, student_file.type)
@@ -129,6 +142,8 @@ if user_role == t["role_student"]:
                             conn.commit()
                             st.success(f"🚀 Tvoj súbor bol úspešne nahraný!")
                             st.rerun()
+                        else:
+                            st.error("❌ Nepodarilo sa odoslať súbor. Skontroluj internetové pripojenie alebo Streamlit Secrets.")
             
             st.write("---")
             cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (group[0],))
@@ -187,7 +202,6 @@ else:
                         cursor.execute("INSERT INTO teachers (name, email, password) VALUES (?, ?, ?)", (reg_name, reg_email, hash_password(reg_pwd)))
                         conn.commit()
                         
-                        # ✨ AUTOMATICKÉ PRIHLÁSENIE PO REGISTRÁCII
                         cursor.execute("SELECT id, name FROM teachers WHERE email = ?", (reg_email,))
                         new_user = cursor.fetchone()
                         if new_user:
@@ -235,13 +249,16 @@ else:
             if typ_materialu == t["type_cloud"]:
                 uploaded_file = st.file_uploader("Vyberte súbor:")
                 if st.button("Zdieľať súbor cez Cloud"):
-                    if uploaded_file is not None and SUPABASE_URL and SUPABASE_KEY:
-                        file_bytes = uploaded_file.getvalue()
-                        public_link, cloud_path = upload_to_supabase(file_bytes, uploaded_file.name, uploaded_file.type)
-                        if public_link:
-                            cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, 'Učiteľ')", (uploaded_file.name, public_link, vybrana_skupina_id, cloud_path))
-                            conn.commit()
-                            st.rerun()
+                    if uploaded_file is not None:
+                        with st.spinner("Zdieľam súbor..."):
+                            file_bytes = uploaded_file.getvalue()
+                            public_link, cloud_path = upload_to_supabase(file_bytes, uploaded_file.name, uploaded_file.type)
+                            if public_link:
+                                cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, 'Učiteľ')", (uploaded_file.name, public_link, vybrana_skupina_id, cloud_path))
+                                conn.commit()
+                                st.rerun()
+                            else:
+                                st.error("❌ Nepodarilo sa odoslať súbor. Skontroluj Secrets v Streamlite alebo či Supabase nemá výpadok.")
             else:
                 mat_title = st.text_input("Názov odkazu:")
                 mat_link = st.text_input("Odkaz (URL):")
