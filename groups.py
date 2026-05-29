@@ -59,6 +59,7 @@ if role == "Žiak":
                 conn = sqlite3.connect(DB_NAME)
                 user = conn.execute("SELECT id, name FROM students WHERE name=? AND password=?", (name, hash_pwd(pwd))).fetchone()
                 if user: st.session_state.st_id, st.session_state.st_name = user; st.rerun()
+                else: st.error("Zlé meno alebo heslo.")
                 conn.close()
         with tab2:
             name = st.text_input("Meno", key="st_reg_name")
@@ -123,6 +124,7 @@ else: # Učiteľ
                 conn = sqlite3.connect(DB_NAME)
                 user = conn.execute("SELECT id, name FROM teachers WHERE name=? AND password=?", (name, hash_pwd(pw))).fetchone()
                 if user: st.session_state.tch_id, st.session_state.tch_name = user; st.rerun()
+                else: st.error("Zlé meno alebo heslo.")
                 conn.close()
         with tab2:
             name = st.text_input("Meno", key="tch_reg_name")
