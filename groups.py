@@ -69,7 +69,6 @@ if role == "Žiak":
     else:
         st.write(f"### Ahoj, {st.session_state.st_name}!")
         if st.button("Odhlásiť"): st.session_state.st_id = None; st.rerun()
-        
         kod = st.text_input("Zadaj kód skupiny:")
         if st.button("Vstúpiť do skupiny"):
             conn = sqlite3.connect(DB_NAME)
@@ -115,7 +114,7 @@ else: # Učiteľ
                     conn.commit(); conn.close(); st.success("Registrácia OK!")
                 except: st.error("Meno alebo email už existuje.")
     else:
-        st.write(f"### Profesor {st.session_state.tch_name}")
+        st.write(f"### {st.session_state.tch_name}")
         if st.button("Odhlásiť"): st.session_state.tch_id = None; st.rerun()
         
         n = st.text_input("Názov novej skupiny")
