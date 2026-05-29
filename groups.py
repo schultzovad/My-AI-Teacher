@@ -3,7 +3,7 @@ import sqlite3
 import hashlib
 import random
 import string
-from supabase import create_client, Client
+from supabase import create_client
 
 # --- NASTAVENIE STRÁNKY ---
 st.set_page_config(layout="wide")
@@ -18,7 +18,7 @@ supabase_client = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
         supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception:
+    except Exception as e:
         pass
 
 # --- INICIALIZÁCIA DATABÁZY ---
@@ -69,7 +69,7 @@ def generate_group_code():
 def upload_to_supabase(file_bytes, file_name, mime_type):
     """Odošle súbor a v prípade zlyhania vráti skutočnú textovú chybu."""
     if not supabase_client:
-        return None, "Chyba: Supabase kľúče nie sú správne načítané v Streamlit Secrets."
+        return None, "Chyba: Supabase klient nie je inicializovaný. Skontroluj Secrets."
         
     clean_name = "".join(c for c in file_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
