@@ -77,7 +77,6 @@ if role == "Žiak":
         st.write(f"Ahoj {st.session_state.st_name}!")
         if st.button("Odhlásiť"): st.session_state.st_id = None; st.rerun()
         
-        # Pridanie do skupiny
         kod = st.text_input("Zadaj kód skupiny:")
         if st.button("Vstúpiť do skupiny"):
             conn = sqlite3.connect(DB_NAME)
@@ -87,7 +86,6 @@ if role == "Žiak":
                 except: pass
             conn.close()
             
-        # Zoznam skupín
         conn = sqlite3.connect(DB_NAME)
         skupiny = conn.execute("SELECT g.id, g.group_name FROM groups g JOIN group_members gm ON g.id=gm.group_id WHERE gm.student_id=?", (st.session_state.st_id,)).fetchall()
         for s in skupiny:
@@ -99,12 +97,24 @@ if role == "Žiak":
 else: # Učiteľ
     if "tch_id" not in st.session_state: st.session_state.tch_id = None
     if not st.session_state.tch_id:
-        em = st.text_input("Email učiteľa")
-        pw = st.text_input("Heslo", type="password")
-        if st.button("Prihlásiť"):
-            conn = sqlite3.connect(DB_NAME)
-            user = conn.execute("SELECT id, name FROM teachers WHERE email=? AND password=?", (em, hash_pwd(pw))).fetchone()
-            if user: st.session_state.tch_id, st.session_state.tch_name = user; st.rerun()
+        tab1, tab2 = st.tabs(["Prihlásiť", "Registrovať"])
+        with tab1:
+            em = st.text_input("Email učiteľa", key="tch_em")
+            pw = st.text_input("Heslo", type="password", key="tch_pw")
+            if st.button("Prihlásiť"):
+                conn = sqlite3.connect(DB_NAME)
+                user = conn.execute("SELECT id, name FROM teachers WHERE email=? AND password=?", (em, hash_pwd(pw))).fetchone()
+                if user: st.session_state.tch_id, st.session_state.tch_name = user; st.rerun()
+        with tab2:
+            name = st.text_input("Meno učiteľa")
+            em = st.text_input("Email", key="tch_reg_em")
+            pw = st.text_input("Heslo", type="password", key="tch_reg_pw")
+            if st.button("Registrovať"):
+                try:
+                    conn = sqlite3.connect(DB_NAME)
+                    conn.execute("INSERT INTO teachers (name, email, password) VALUES (?, ?, ?)", (name, em, hash_pwd(pw)))
+                    conn.commit(); st.success("Registrácia úspešná!")
+                except: st.error("Email už existuje.")
     else:
         st.write(f"Profesor {st.session_state.tch_name}")
         if st.button("Odhlásiť"): st.session_state.tch_id = None; st.rerun()
