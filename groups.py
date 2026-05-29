@@ -48,6 +48,14 @@ def init_db():
         )
     ''')
     conn.commit()
+    
+    # 🩹 AUTOMATICKÁ OPRAVA: Pridá stĺpček do už existujúcej databázy na serveri
+    try:
+        cursor.execute("ALTER TABLE materials ADD COLUMN uploaded_by TEXT DEFAULT 'Učiteľ'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass # Ak stĺpček už existuje, ignoruj chybu a pokračuj
+        
     conn.close()
 
 init_db()
@@ -149,10 +157,8 @@ if user_role == t["role_student"]:
                 for m in materials:
                     col1, col2 = st.columns([8, 2])
                     with col1:
-                        # Vypíšeme aj to, kto súbor nahral
                         st.markdown(f"📁 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
                     with col2:
-                        # ŽIAK MÔŽE VYMAZAŤ LEN SVOJ SÚBOR (Meno sa musí presne zhodovať)
                         if m[4] == student_name:
                             if st.button("🗑️ Odstrániť", key=f"del_st_{m[0]}"):
                                 if m[3]: 
@@ -283,7 +289,6 @@ else:
                     with c1:
                         st.markdown(f"🔗 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
                     with c2:
-                        # UČITEĽ VIDÍ TLAČIDLO NA ZMAZANIE PRI VŠETKÝCH SÚBOROCH
                         if st.button("❌ Zmazať", key=f"del_tch_{m[0]}"):
                             if m[3]: 
                                 delete_from_supabase(m[3])
