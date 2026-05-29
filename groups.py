@@ -59,38 +59,38 @@ def generate_group_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 def upload_to_supabase(file_bytes, file_name, mime_type):
-    """Odošle súbor priamo do Supabase Storage a ošetrí výpadky siete."""
+    """Odošle súbor do Supabase Storage s vynúteným API kľúčom v URL adrese."""
     if not SUPABASE_URL or not SUPABASE_KEY:
         return None, None
         
     clean_name = "".join(c for c in file_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
-    url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{unique_name}"
+    
+    # 🌟 POISTKA: Pridanie apikey priamo do URL zaručí úspešné overenie prístupu
+    url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{unique_name}?apikey={SUPABASE_KEY}"
+    
     headers = {
         "Authorization": f"Bearer {SUPABASE_KEY}",
-        "API-KEY": SUPABASE_KEY,
         "Content-Type": mime_type
     }
     
     try:
-        response = requests.post(url, headers=headers, data=file_bytes, timeout=10)
+        response = requests.post(url, headers=headers, data=file_bytes, timeout=15)
         if response.status_code == 200:
             public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{unique_name}"
             return public_url, unique_name
     except requests.exceptions.RequestException:
-        # Ak zlyhá sieť alebo Supabase neodpovedá, aplikácia nespadne, iba vráti prázdne hodnoty
         pass
         
     return None, None
 
 def delete_from_supabase(file_path):
-    url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}"
+    url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}?apikey={SUPABASE_KEY}"
     headers = {
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "API-KEY": SUPABASE_KEY
+        "Authorization": f"Bearer {SUPABASE_KEY}"
     }
     try:
-        response = requests.delete(url, headers=headers, timeout=10)
+        response = requests.delete(url, headers=headers, timeout=15)
         return response.status_code == 200
     except requests.exceptions.RequestException:
         return False
@@ -143,7 +143,7 @@ if user_role == t["role_student"]:
                             st.success(f"🚀 Tvoj súbor bol úspešne nahraný!")
                             st.rerun()
                         else:
-                            st.error("❌ Nepodarilo sa odoslať súbor. Skontroluj internetové pripojenie alebo Streamlit Secrets.")
+                            st.error("❌ Nepodarilo sa odoslať súbor. Skontroluj Secrets v Streamlite alebo či Supabase nemá výpadok.")
             
             st.write("---")
             cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (group[0],))
