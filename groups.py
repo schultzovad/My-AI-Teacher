@@ -3,7 +3,7 @@ import sqlite3
 import hashlib
 import random
 import string
-import requests
+from supabase import create_client, Client
 
 # --- NASTAVENIE STRÁNKY ---
 st.set_page_config(layout="wide")
@@ -12,6 +12,14 @@ st.set_page_config(layout="wide")
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
 SUPABASE_KEY = str(st.secrets.get("SUPABASE_KEY", "")).strip()
 BUCKET_NAME = "materials"
+
+# 🌟 INICIALIZÁCIA OFICIÁLNEHO SUPABASE KLIENTA
+supabase_client = None
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception:
+        pass
 
 # --- INICIALIZÁCIA DATABÁZY ---
 DB_NAME = "tutor_platform.db"
@@ -59,46 +67,36 @@ def generate_group_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 def upload_to_supabase(file_bytes, file_name, mime_type):
-    """Odošle súbor do Supabase Storage s maximálnym zabezpečením hlavičiek."""
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    """Odošle súbor pomocou oficiálnej Supabase knižnice."""
+    if not supabase_client:
         return None, None
         
     clean_name = "".join(c for c in file_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
     
-    # URL s apikey v parametre
-    url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{unique_name}?apikey={SUPABASE_KEY}"
-    
-    # 🌟 NEPRIESTRELNÉ HLAVIČKY (Dávame kľúč všade, kde ho Supabase môže hľadať)
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": mime_type
-    }
-    
     try:
-        response = requests.post(url, headers=headers, data=file_bytes, timeout=15)
-        if response.status_code == 200:
+        # 🌟 Využitie oficiálneho SDK na bezpečné nahranie
+        response = supabase_client.storage.from_(BUCKET_NAME).upload(
+            path=unique_name,
+            file=file_bytes,
+            file_options={"content-type": mime_type}
+        )
+        if response:
             public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{unique_name}"
             return public_url, unique_name
-    except requests.exceptions.RequestException:
-        pass
+    except Exception as e:
+        # Ak nahrávanie zlyhá, vypíšeme reálnu chybu zo Supabase do konzoly pre diagnostiku
+        print(f"Supabase error: {e}")
         
     return None, None
 
 def delete_from_supabase(file_path):
-    if not SUPABASE_URL or not SUPABASE_KEY:
+    if not supabase_client:
         return False
-        
-    url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}?apikey={SUPABASE_KEY}"
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}"
-    }
     try:
-        response = requests.delete(url, headers=headers, timeout=15)
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
+        response = supabase_client.storage.from_(BUCKET_NAME).remove([file_path])
+        return response is not None
+    except Exception:
         return False
 
 # --- JAZYKOVÉ DATA ---
