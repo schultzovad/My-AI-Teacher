@@ -8,7 +8,6 @@ from supabase import create_client
 
 st.set_page_config(layout="wide")
 
-# Konfigurácia
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
 SUPABASE_KEY = str(st.secrets.get("SUPABASE_KEY", "")).strip()
 BUCKET_NAME = "materials"
@@ -78,9 +77,10 @@ if role == "Žiak":
             g = conn.execute("SELECT id FROM groups WHERE group_code=?", (kod.upper(),)).fetchone()
             if g:
                 try: 
-                    conn.execute("INSERT OR IGNORE INTO group_members (group_id, student_id) VALUES (?, ?)", (g[0], st.session_state.st_id))
-                    conn.commit(); st.session_state.open_group = g[0]; st.rerun()
-                except: st.info("Niečo sa pokazilo.")
+                    conn.execute("INSERT INTO group_members (group_id, student_id) VALUES (?, ?)", (g[0], st.session_state.st_id))
+                    conn.commit()
+                except: pass
+                st.session_state.open_group = g[0]; st.rerun()
             else: st.error("Kód neexistuje.")
             conn.close()
         
@@ -139,10 +139,12 @@ else: # Učiteľ
                     conn.execute("UPDATE groups SET group_name=? WHERE id=?", (new_n, s[0])); conn.commit(); st.rerun()
                 
                 st.write("**Žiaci v skupine:**")
-                # Opravený dotaz na žiakov:
-                ziaci = conn.execute("SELECT s.name FROM students s JOIN group_members gm ON s.id = gm.student_id WHERE gm.group_id = ?", (s[0],)).fetchall()
-                if not ziaci: st.write("Zatiaľ žiadni žiaci.")
-                for z in ziaci: st.write(f"• {z[0]}")
+                ziaci = conn.execute("SELECT s.id, s.name FROM students s JOIN group_members gm ON s.id=gm.student_id WHERE gm.group_id=?", (s[0],)).fetchall()
+                for z in ziaci:
+                    c1, c2 = st.columns([8, 2])
+                    c1.write(f"• {z[1]}")
+                    if c2.button("Odobrať", key=f"rem_{s[0]}_{z[0]}"):
+                        conn.execute("DELETE FROM group_members WHERE group_id=? AND student_id=?", (s[0], z[0])); conn.commit(); st.rerun()
                 
                 st.write("**Materiály:**")
                 mats = conn.execute("SELECT id, title, link, file_path_on_cloud FROM materials WHERE group_id=?", (s[0],)).fetchall()
