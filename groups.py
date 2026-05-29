@@ -89,8 +89,17 @@ if role == "Žiak":
         for s in skupiny:
             is_expanded = st.session_state.get("open_group", None) == s[0]
             with st.expander(f"📁 {s[1]}", expanded=is_expanded):
-                mats = conn.execute("SELECT id, title, link FROM materials WHERE group_id=?", (s[0],)).fetchall()
-                for m in mats: st.markdown(f"• [{m[1]}]({m[2]})")
+                mats = conn.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id=?", (s[0],)).fetchall()
+                for m in mats:
+                    c1, c2 = st.columns([8, 2])
+                    c1.markdown(f"• [{m[1]}]({m[2]}) (nahral: {m[4]})")
+                    # Tlačidlo zmazať sa zobrazí len ak žiak súbor nahral
+                    if m[4] == st.session_state.st_name:
+                        if c2.button("❌ Zmazať", key=f"del_st_{m[0]}"):
+                            delete_from_supabase(m[3])
+                            conn.execute("DELETE FROM materials WHERE id=?", (m[0],))
+                            conn.commit(); st.rerun()
+                
                 up_file = st.file_uploader(f"Nahrať do {s[1]}", key=f"file_{s[0]}")
                 if up_file and st.button(f"Nahrať", key=f"btn_{s[0]}"):
                     url, path = upload_to_supabase(up_file.getvalue(), up_file.name, up_file.type)
