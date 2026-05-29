@@ -10,7 +10,7 @@ st.set_page_config(layout="wide")
 
 # Načítanie Supabase údajov zo Secrets
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
-SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
+SUPABASE_KEY = str(st.secrets.get("SUPABASE_KEY", "")).strip()
 BUCKET_NAME = "materials"
 
 # --- INICIALIZÁCIA DATABÁZY ---
@@ -59,17 +59,19 @@ def generate_group_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 def upload_to_supabase(file_bytes, file_name, mime_type):
-    """Odošle súbor do Supabase Storage s vynúteným API kľúčom v URL adrese."""
+    """Odošle súbor do Supabase Storage s maximálnym zabezpečením hlavičiek."""
     if not SUPABASE_URL or not SUPABASE_KEY:
         return None, None
         
     clean_name = "".join(c for c in file_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
     
-    # 🌟 POISTKA: Pridanie apikey priamo do URL zaručí úspešné overenie prístupu
+    # URL s apikey v parametre
     url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{unique_name}?apikey={SUPABASE_KEY}"
     
+    # 🌟 NEPRIESTRELNÉ HLAVIČKY (Dávame kľúč všade, kde ho Supabase môže hľadať)
     headers = {
+        "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "Content-Type": mime_type
     }
@@ -85,8 +87,12 @@ def upload_to_supabase(file_bytes, file_name, mime_type):
     return None, None
 
 def delete_from_supabase(file_path):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return False
+        
     url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}?apikey={SUPABASE_KEY}"
     headers = {
+        "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}"
     }
     try:
