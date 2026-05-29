@@ -37,7 +37,7 @@ def init_db():
             password TEXT NOT NULL
         )
     ''')
-    # 2. NOVÉ: Tabuľka žiakov
+    # 2. Tabuľka žiakov
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS students (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,7 +56,7 @@ def init_db():
             FOREIGN KEY (teacher_id) REFERENCES teachers (id)
         )
     ''')
-    # 4. NOVÉ: Prepojovacia tabuľka (členovia skupín)
+    # 4. Prepojovacia tabuľka (členovia skupín)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS group_members (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -308,7 +308,26 @@ else:
             vybrana_skupina_text = st.selectbox("Vyberte skupinu pre správu:", list(skupiny_dict.keys()))
             vybrana_skupina_id = skupiny_dict[vybrana_skupina_text]
             
-            if st.button("🗑| Vymazať celú skupinu vrátane súborov", type="primary"):
+            # NAČÍTANIE AKTUÁLNEHO NÁZVU PRE EDITÁCIU
+            cursor.execute("SELECT group_name FROM groups WHERE id = ?", (vybrana_skupina_id,))
+            aktualny_nazov = cursor.fetchone()[0]
+            
+            # --- 🌟 NOVÉ: PREMENOVANIE SKUPINY ---
+            col_rename1, col_rename2 = st.columns([7, 3])
+            with col_rename1:
+                novy_nazov_input = st.text_input("Upraviť názov vybranej skupiny:", value=aktualny_nazov, key=f"ren_input_{vybrana_skupina_id}")
+            with col_rename2:
+                st.write(" ") # odsadenie kvôli zarovnaniu s textovým polom
+                st.write(" ")
+                if st.button("✏️ Premenovať skupinu", key=f"ren_btn_{vybrana_skupina_id}"):
+                    if novy_nazov_input.strip() != "":
+                        cursor.execute("UPDATE groups SET group_name = ? WHERE id = ?", (novy_nazov_input.strip(), vybrana_skupina_id))
+                        conn.commit()
+                        st.success("Názov skupiny bol úspešne zmenený!")
+                        st.rerun()
+
+            st.write(" ")
+            if st.button("🗑️ Vymazať celú skupinu vrátane súborov", type="primary"):
                 with st.spinner("Mažem skupinu..."):
                     cursor.execute("SELECT file_path_on_cloud FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
                     subory = cursor.fetchall()
@@ -321,15 +340,13 @@ else:
                 st.success("Skupina bola vymazaná.")
                 st.rerun()
             
-            # --- 🌟 NOVÉ: SEKCIJA PRE PRIDÁVANIE ŽIAKOV DO SKUPINY ---
+            # --- SEKCIJA PRE PRIDÁVANIE ŽIAKOV DO SKUPINY ---
             st.write("---")
             st.subheader("👥 Správa študentov v tejto skupine")
             
-            # Načítanie všetkých registrovaných žiakov v systéme
             cursor.execute("SELECT id, name, email FROM students")
             vsetci_studenti = cursor.fetchall()
             
-            # Načítanie žiakov, ktorí už v tejto skupine sú
             cursor.execute('''
                 SELECT students.id, students.name FROM group_members 
                 JOIN students ON group_members.student_id = students.id 
