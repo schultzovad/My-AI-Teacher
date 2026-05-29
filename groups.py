@@ -77,7 +77,6 @@ def upload_to_supabase(file_bytes, file_name, mime_type):
     if not supabase_client:
         return None, "Chyba: Supabase klient nie je inicializovaný. Skontroluj Secrets."
         
-    # Odstránenie diakritiky a nepovolených znakov
     base_name = remove_diacritics(file_name)
     clean_name = "".join(c for c in base_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
@@ -255,6 +254,25 @@ else:
             vybrana_skupina_text = st.selectbox("Vyberte skupinu:", list(skupiny_dict.keys()))
             vybrana_skupina_id = skupiny_dict[vybrana_skupina_text]
             
+            # --- 🌟 NOVÉ: TLAČIDLO NA VYMAZANIE CELEJ SKUPINY ---
+            if st.button("🗑️ Vymazať celú skupinu vrátane súborov", type="primary"):
+                with st.spinner("Mažem skupinu a čistím cloud..."):
+                    # 1. Nájdeme a zmažeme všetky prislúchajúce súbory na Supabase cloude
+                    cursor.execute("SELECT file_path_on_cloud FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
+                    subory_na_zmazanie = cursor.fetchall()
+                    for subor in subory_na_zmazanie:
+                        if subor[0]:
+                            delete_from_supabase(subor[0])
+                    
+                    # 2. Vymažeme materiály z lokálnej databázy
+                    cursor.execute("DELETE FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
+                    # 3. Vymažeme samotnú skupinu
+                    cursor.execute("DELETE FROM groups WHERE id = ?", (vybrana_skupina_id,))
+                    conn.commit()
+                st.success("💥 Skupina a všetky jej materiály boli úspešne vymazané!")
+                st.rerun()
+            
+            st.write("---")
             typ_materialu = st.radio("Typ materiálu:", [t["type_cloud"], t["type_link"]], horizontal=True)
             if typ_materialu == t["type_cloud"]:
                 uploaded_file = st.file_uploader("Vyberte súbor:")
