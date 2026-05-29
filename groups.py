@@ -4,7 +4,6 @@ import hashlib
 import random
 import string
 import requests
-import os
 
 # --- NASTAVENIE STRÁNKY ---
 st.set_page_config(layout="wide")
@@ -14,10 +13,8 @@ SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
 BUCKET_NAME = "materials"
 
-# --- 💥 RADIKÁLNY RESET DATABÁZY 💥 ---
+# --- INICIALIZÁCIA DATABÁZY ---
 DB_NAME = "tutor_platform.db"
-if os.path.exists(DB_NAME):
-    os.remove(DB_NAME) # Tento riadok starú zaseknutú databázu natvrdo vymaže zo servera!
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -175,6 +172,8 @@ else:
                     st.session_state.teacher_id = user[0]
                     st.session_state.teacher_name = user[1]
                     st.rerun()
+                else:
+                    st.error("❌ Nesprávny email alebo heslo.")
         with tab2:
             st.subheader(t["register"])
             reg_name = st.text_input(t["name_input"])
@@ -187,9 +186,20 @@ else:
                     try:
                         cursor.execute("INSERT INTO teachers (name, email, password) VALUES (?, ?, ?)", (reg_name, reg_email, hash_password(reg_pwd)))
                         conn.commit()
+                        
+                        # ✨ AUTOMATICKÉ PRIHLÁSENIE PO REGISTRÁCII
+                        cursor.execute("SELECT id, name FROM teachers WHERE email = ?", (reg_email,))
+                        new_user = cursor.fetchone()
+                        if new_user:
+                            st.session_state.teacher_logged_in = True
+                            st.session_state.teacher_id = new_user[0]
+                            st.session_state.teacher_name = new_user[1]
+                        conn.close()
                         st.success("✅ Úspešne zaregistrované!")
-                    except sqlite3.IntegrityError: st.error("❌ Email sa používa.")
-                    conn.close()
+                        st.rerun()
+                    except sqlite3.IntegrityError: 
+                        st.error("❌ Email sa používa.")
+                        conn.close()
     else:
         st.write(f"👋 **Ahoj, profesor {st.session_state.teacher_name}**")
         if st.button(t["logout"]):
