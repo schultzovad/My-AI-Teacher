@@ -155,4 +155,55 @@ else: # Učiteľ
         
         # Zmazanie účtu s potvrdením
         if st.button("❌ Zmazať môj účet", type="primary"): st.session_state.confirm_del_tch = True
-        if st
+        if st.session_state.get("confirm_del_tch", False):
+            st.error("Naozaj chceš ZMAZAŤ CELÝ ÚČET A VŠETKY SKUPINY?")
+            c_y, c_n = st.columns(2)
+            if c_y.button("ÁNO, ZMAZAŤ"):
+                conn = sqlite3.connect(DB_NAME)
+                groups = conn.execute("SELECT id FROM groups WHERE teacher_id=?", (st.session_state.tch_id,)).fetchall()
+                for g in groups: conn.execute("DELETE FROM groups WHERE id=?", (g[0],))
+                conn.execute("DELETE FROM teachers WHERE id=?", (st.session_state.tch_id,))
+                conn.commit(); conn.close(); st.session_state.tch_id = None; st.session_state.confirm_del_tch = False; st.rerun()
+            if c_n.button("Nie"): st.session_state.confirm_del_tch = False; st.rerun()
+
+        n = st.text_input("Názov novej skupiny", value=st.session_state.input_group_name)
+        if st.button("Vytvoriť skupinu"):
+            conn = sqlite3.connect(DB_NAME)
+            conn.execute("INSERT INTO groups (group_name, group_code, teacher_id) VALUES (?, ?, ?)", (n, gen_code(), st.session_state.tch_id))
+            conn.commit(); conn.close(); st.session_state.input_group_name = ""; st.rerun()
+            
+        conn = sqlite3.connect(DB_NAME)
+        skupiny = conn.execute("SELECT id, group_name, group_code FROM groups WHERE teacher_id=?", (st.session_state.tch_id,)).fetchall()
+        for s in skupiny:
+            with st.expander(f"📁 {s[1]} (Kód: {s[2]})"):
+                # Zmazanie skupiny s potvrdením
+                if st.button("Zmazať celú skupinu", key=f"del_{s[0]}"): st.session_state[f"confirm_del_g_{s[0]}"] = True
+                if st.session_state.get(f"confirm_del_g_{s[0]}", False):
+                    st.warning("Naozaj zmazať túto skupinu?")
+                    c_y, c_n = st.columns(2)
+                    if c_y.button("Áno", key=f"yes_{s[0]}"): conn.execute("DELETE FROM groups WHERE id=?", (s[0],)); conn.commit(); st.session_state[f"confirm_del_g_{s[0]}"] = False; st.rerun()
+                    if c_n.button("Nie", key=f"no_{s[0]}"): st.session_state[f"confirm_del_g_{s[0]}"] = False; st.rerun()
+                
+                st.write("**Žiaci v skupine:**")
+                ziaci = conn.execute("SELECT s.id, s.name FROM students s JOIN group_members gm ON s.id=gm.student_id WHERE gm.group_id=?", (s[0],)).fetchall()
+                for z in ziaci:
+                    c1, c2 = st.columns([8, 2])
+                    c1.write(f"• {z[1]}")
+                    if c2.button("Odobrať", key=f"rem_{s[0]}_{z[0]}"):
+                        conn.execute("DELETE FROM group_members WHERE group_id=? AND student_id=?", (s[0], z[0])); conn.commit(); st.rerun()
+                
+                st.write("**Nahrať materiál:**")
+                up_file = st.file_uploader(f"Nahrať do {s[1]}", key=f"file_{s[0]}")
+                if up_file and st.button(f"Nahrať", key=f"btn_{s[0]}"):
+                    url, path = upload_to_supabase(up_file.getvalue(), up_file.name, up_file.type)
+                    conn.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, ?)", (up_file.name, url, s[0], path, st.session_state.tch_name))
+                    conn.commit(); st.rerun()
+
+                st.write("**Materiály:**")
+                mats = conn.execute("SELECT id, title, link, file_path_on_cloud FROM materials WHERE group_id=?", (s[0],)).fetchall()
+                for m in mats:
+                    c1, c2 = st.columns([8, 2])
+                    c1.markdown(f"• [{m[1]}]({m[2]})")
+                    if c2.button("❌ Zmazať", key=f"del_m_{m[0]}"):
+                        delete_from_supabase(m[3]); conn.execute("DELETE FROM materials WHERE id=?", (m[0],)); conn.commit(); st.rerun()
+        conn.close()
