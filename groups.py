@@ -13,7 +13,7 @@ SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
 SUPABASE_KEY = str(st.secrets.get("SUPABASE_KEY", "")).strip()
 BUCKET_NAME = "materials"
 
-# 🌟 INICIALIZÁCIA OFICIÁLNEHO SUPABASE KLIENTA
+# INICIALIZÁCIA OFICIÁLNEHO SUPABASE KLIENTA
 supabase_client = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
@@ -67,15 +67,14 @@ def generate_group_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 def upload_to_supabase(file_bytes, file_name, mime_type):
-    """Odošle súbor pomocou oficiálnej Supabase knižnice."""
+    """Odošle súbor a v prípade zlyhania vráti skutočnú textovú chybu."""
     if not supabase_client:
-        return None, None
+        return None, "Chyba: Supabase kľúče nie sú správne načítané v Streamlit Secrets."
         
     clean_name = "".join(c for c in file_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
     
     try:
-        # 🌟 Využitie oficiálneho SDK na bezpečné nahranie
         response = supabase_client.storage.from_(BUCKET_NAME).upload(
             path=unique_name,
             file=file_bytes,
@@ -85,10 +84,9 @@ def upload_to_supabase(file_bytes, file_name, mime_type):
             public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{unique_name}"
             return public_url, unique_name
     except Exception as e:
-        # Ak nahrávanie zlyhá, vypíšeme reálnu chybu zo Supabase do konzoly pre diagnostiku
-        print(f"Supabase error: {e}")
+        return None, str(e)
         
-    return None, None
+    return None, "Neznáma chyba pri nahrávaní."
 
 def delete_from_supabase(file_path):
     if not supabase_client:
@@ -139,15 +137,15 @@ if user_role == t["role_student"]:
                 if student_file is not None:
                     with st.spinner("Nahrávam tvoju prácu..."):
                         file_bytes = student_file.getvalue()
-                        public_link, cloud_path = upload_to_supabase(file_bytes, student_file.name, student_file.type)
+                        public_link, error_msg = upload_to_supabase(file_bytes, student_file.name, student_file.type)
                         if public_link:
                             cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, ?)", 
-                                           (student_file.name, public_link, group[0], cloud_path, student_name))
+                                           (student_file.name, public_link, group[0], error_msg, student_name))
                             conn.commit()
                             st.success(f"🚀 Tvoj súbor bol úspešne nahraný!")
                             st.rerun()
                         else:
-                            st.error("❌ Nepodarilo sa odoslať súbor. Skontroluj Secrets v Streamlite alebo či Supabase nemá výpadok.")
+                            st.error(f"❌ Detail chyby zo Supabase: {error_msg}")
             
             st.write("---")
             cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (group[0],))
@@ -256,33 +254,16 @@ else:
                     if uploaded_file is not None:
                         with st.spinner("Zdieľam súbor..."):
                             file_bytes = uploaded_file.getvalue()
-                            public_link, cloud_path = upload_to_supabase(file_bytes, uploaded_file.name, uploaded_file.type)
+                            public_link, error_msg = upload_to_supabase(file_bytes, uploaded_file.name, uploaded_file.type)
                             if public_link:
-                                cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, 'Učiteľ')", (uploaded_file.name, public_link, vybrana_skupina_id, cloud_path))
+                                cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, 'Učiteľ')", (uploaded_file.name, public_link, vybrana_skupina_id, error_msg))
                                 conn.commit()
                                 st.rerun()
                             else:
-                                st.error("❌ Nepodarilo sa odoslať súbor. Skontroluj Secrets v Streamlite alebo či Supabase nemá výpadok.")
+                                st.error(f"❌ Detail chyby zo Supabase: {error_msg}")
             else:
                 mat_title = st.text_input("Názov odkazu:")
                 mat_link = st.text_input("Odkaz (URL):")
                 if st.button("Zdieľať odkaz"):
                     if mat_title and mat_link:
-                        cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, NULL, 'Učiteľ')", (mat_title, mat_link, vybrana_skupina_id))
-                        conn.commit()
-                        st.rerun()
-            
-            cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
-            skupina_materialy = cursor.fetchall()
-            if skupina_materialy:
-                for m in skupina_materialy:
-                    c1, c2 = st.columns([8, 2])
-                    with c1:
-                        st.markdown(f"🔗 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
-                    with c2:
-                        if st.button("❌ Zmazať", key=f"del_tch_{m[0]}"):
-                            if m[3]: delete_from_supabase(m[3])
-                            cursor.execute("DELETE FROM materials WHERE id = ?", (m[0],))
-                            conn.commit()
-                            st.rerun()
-        conn.close()
+                        cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, NULL, 'Uč
