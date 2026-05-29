@@ -69,7 +69,6 @@ if role == "Žiak":
     else:
         st.write(f"### {st.session_state.st_name}")
         if st.button("Odhlásiť"): st.session_state.st_id = None; st.rerun()
-        
         kod = st.text_input("Zadaj kód skupiny:")
         if st.button("Vstúpiť do skupiny"):
             conn = sqlite3.connect(DB_NAME)
@@ -77,7 +76,7 @@ if role == "Žiak":
             if g:
                 try: 
                     conn.execute("INSERT INTO group_members VALUES (?, ?)", (g[0], st.session_state.st_id))
-                    conn.commit(); st.success("Vitaj v skupine! ✅"); st.rerun()
+                    conn.commit(); st.session_state.open_group = g[0]; st.rerun()
                 except: st.info("V tejto skupine už si. 📁")
             else: st.error("Kód neexistuje. ❌")
             conn.close()
@@ -85,7 +84,8 @@ if role == "Žiak":
         conn = sqlite3.connect(DB_NAME)
         skupiny = conn.execute("SELECT g.id, g.group_name FROM groups g JOIN group_members gm ON g.id=gm.group_id WHERE gm.student_id=?", (st.session_state.st_id,)).fetchall()
         for s in skupiny:
-            with st.expander(f"📁 {s[1]}"):
+            is_expanded = st.session_state.get("open_group", None) == s[0]
+            with st.expander(f"📁 {s[1]}", expanded=is_expanded):
                 mats = conn.execute("SELECT title, link FROM materials WHERE group_id=?", (s[0],)).fetchall()
                 for m in mats: st.markdown(f"• [{m[0]}]({m[1]})")
                 up_file = st.file_uploader(f"Nahrať do {s[1]}", key=f"file_{s[0]}")
@@ -93,6 +93,7 @@ if role == "Žiak":
                     url, path = upload_to_supabase(up_file.getvalue(), up_file.name, up_file.type)
                     conn.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, ?)", (up_file.name, url, s[0], path, st.session_state.st_name))
                     conn.commit(); st.rerun()
+        st.session_state.open_group = None
         conn.close()
 
 else: # Učiteľ
@@ -120,13 +121,11 @@ else: # Učiteľ
     else:
         st.write(f"### {st.session_state.tch_name}")
         if st.button("Odhlásiť"): st.session_state.tch_id = None; st.rerun()
-        
         n = st.text_input("Názov novej skupiny")
         if st.button("Vytvoriť skupinu"):
             conn = sqlite3.connect(DB_NAME)
             conn.execute("INSERT INTO groups (group_name, group_code, teacher_id) VALUES (?, ?, ?)", (n, gen_code(), st.session_state.tch_id))
             conn.commit(); conn.close(); st.rerun()
-            
         conn = sqlite3.connect(DB_NAME)
         skupiny = conn.execute("SELECT id, group_name, group_code FROM groups WHERE teacher_id=?", (st.session_state.tch_id,)).fetchall()
         for s in skupiny:
