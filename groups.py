@@ -42,6 +42,8 @@ def init_db():
             title TEXT NOT NULL,
             link TEXT NOT NULL,
             group_id INTEGER,
+            file_path_on_cloud TEXT,
+            uploaded_by TEXT DEFAULT 'Učiteľ',
             FOREIGN KEY (group_id) REFERENCES groups (id)
         )
     ''')
@@ -57,7 +59,7 @@ def generate_group_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
 def upload_to_supabase(file_bytes, file_name, mime_type):
-    """Odošle súbor priamo do Supabase Storage a vráti naň verejný odkaz."""
+    """Odošle súbor priamo do Supabase Storage a vráti verejný odkaz + cestu k súboru."""
     clean_name = "".join(c for c in file_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
     
@@ -72,10 +74,20 @@ def upload_to_supabase(file_bytes, file_name, mime_type):
     
     if response.status_code == 200:
         public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{unique_name}"
-        return public_url
-    return None
+        return public_url, unique_name
+    return None, None
 
-# --- JAZYKOVÉ DATA (VRÁTENÉ VŠETKY JAZYKY + TVOJE ÚPRAWY) ---
+def delete_from_supabase(file_path):
+    """Vymaže súbor zo Supabase Storage úložiska."""
+    url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}"
+    headers = {
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "API-KEY": SUPABASE_KEY
+    }
+    response = requests.delete(url, headers=headers)
+    return response.status_code == 200
+
+# --- JAZYKOVÉ DATA ---
 lang_data = {
     "SK": {
         "title": "👥 Študijné skupiny", "label": "Názov skupiny", "btn": "Vytvoriť", 
@@ -83,55 +95,6 @@ lang_data = {
         "role_teacher": "Som Učiteľ", "role_student": "Som Žiak", "code_label": "Zadaj kód skupiny", 
         "join_btn": "Vstúpiť do skupiny", "name_input": "Meno", "pwd_input": "Heslo",
         "type_cloud": "Nahrať súbor (Uloží sa do Supabase cloudu)", "type_link": "Vložiť obyčajný internetový odkaz"
-    },
-    "EN": {
-        "title": "👥 Study Groups", "label": "Group name", "btn": "Create", 
-        "login": "Login", "register": "Registration", "logout": "Log out", 
-        "role_teacher": "I am a Teacher", "role_student": "I am a Student", "code_label": "Enter group code", 
-        "join_btn": "Join Group", "name_input": "Name", "pwd_input": "Password",
-        "type_cloud": "Upload file to Cloud", "type_link": "Insert web link (URL)"
-    },
-    "DE": {
-        "title": "👥 Studiengruppen", "label": "Name", "btn": "Erstellen", 
-        "login": "Login", "register": "Registrierung", "logout": "Abmelden", 
-        "role_teacher": "Ich bin Lehrer", "role_student": "Ich bin Schüler", "code_label": "Gruppencode eingeben", 
-        "join_btn": "Gruppe beitreten", "name_input": "Name", "pwd_input": "Passwort",
-        "type_cloud": "Datei in die Cloud hochladen", "type_link": "Internetlink einfügen"
-    },
-    "ES": {
-        "title": "👥 Grupos", "label": "Nombre", "btn": "Crear", 
-        "login": "Iniciar sesión", "register": "Registrarse", "logout": "Cerrar sesión", 
-        "role_teacher": "Soy Profesor", "role_student": "Soy Estudiante", "code_label": "Código de grupo", 
-        "join_btn": "Unirse al grupo", "name_input": "Nombre", "pwd_input": "Contraseña",
-        "type_cloud": "Subir archivo a la nube", "type_link": "Insertar enlace de internet"
-    },
-    "FR": {
-        "title": "👥 Groupes", "label": "Nom", "btn": "Créer", 
-        "login": "Connexion", "register": "Inscription", "logout": "Déconnexion", 
-        "role_teacher": "Je suis Enseignant", "role_student": "Je suis Étudiant", "code_label": "Code du groupe", 
-        "join_btn": "Rejoindre le groupe", "name_input": "Nom", "pwd_input": "Mot de passe",
-        "type_cloud": "Téléverser sur le Cloud", "type_link": "Insérer un lien internet"
-    },
-    "IT": {
-        "title": "👥 Gruppi", "label": "Nome", "btn": "Crea", 
-        "login": "Accesso", "register": "Registrazione", "logout": "Disconnetti", 
-        "role_teacher": "Sono un Insegnante", "role_student": "Sono uno Studente", "code_label": "Codice gruppo", 
-        "join_btn": "Entra nel gruppo", "name_input": "Nome", "pwd_input": "Password",
-        "type_cloud": "Carica file sul Cloud", "type_link": "Inserisci collegamento internet"
-    },
-    "UA": {
-        "title": "👥 Групи", "label": "Назва", "btn": "Створити", 
-        "login": "Вхід", "register": "Реєстрація", "logout": "Вийти", 
-        "role_teacher": "Я вчитель", "role_student": "Я учень", "code_label": "Введіть код групи", 
-        "join_btn": "Увійти в групу", "name_input": "Ім'я", "pwd_input": "Пароль",
-        "type_cloud": "Завантажити файл у хмару", "type_link": "Вставити інтернет-посилання"
-    },
-    "RU": {
-        "title": "👥 Группы", "label": "Название", "btn": "Создать", 
-        "login": "Вход", "register": "Регистрация", "logout": "Выйти", 
-        "role_teacher": "Я учитель", "role_student": "Я ученик", "code_label": "Введите код группы", 
-        "join_btn": "Войти в группу", "name_input": "Имя", "pwd_input": "Пароль",
-        "type_cloud": "Загрузить файл в облако", "type_link": "Вставить интернет-ссылку"
     }
 }
 
@@ -145,34 +108,65 @@ user_role = st.radio("Vyberte svoju rolu:", [t["role_student"], t["role_teacher"
 # --- REŽIM ŽIAK ---
 if user_role == t["role_student"]:
     st.write("---")
-    student_name = st.text_input(f"Tvoje {t['name_input'].lower()}:", key="st_name")
+    student_name = st.text_input(f"Tvoje {t['name_input'].lower()}:", key="st_name").strip()
     group_code_input = st.text_input(t["code_label"], key="g_code").strip().upper()
     
-    if st.button(t["join_btn"]):
-        if student_name and group_code_input:
-            conn = sqlite3.connect(DB_NAME)
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, group_name FROM groups WHERE group_code = ?", (group_code_input,))
-            group = cursor.fetchone()
+    if student_name and group_code_input:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, group_name FROM groups WHERE group_code = ?", (group_code_input,))
+        group = cursor.fetchone()
+        
+        if group:
+            st.success(f"🎉 Vitaj v skupine: **{group[1]}**")
             
-            if group:
-                st.success(f"🎉 Vitaj v skupine: **{group[1]}**")
-                
-                cursor.execute("SELECT title, link FROM materials WHERE group_id = ?", (group[0],))
-                materials = cursor.fetchall()
-                conn.close()
-                
-                if materials:
-                    st.subheader("📚 Spoločné materiály na štúdium:")
-                    for m in materials:
-                        st.markdown(f"📁 [{m[0]}]({m[1]})")
-                else:
-                    st.info("Učiteľ zatiaľ do tejto skupiny nepridal žiadne materiály.")
+            # --- SEKCIA PRE NAHRÁVANIE SÚBOROV ŽIAKOM ---
+            st.write("---")
+            st.subheader("📤 Odovzdať môj súbor do skupiny")
+            student_file = st.file_uploader("Vyber svoj súbor (úlohu, projekt...):", key="file_uploader_student")
+            if st.button("Poslať súbor spolužiakom a učiteľovi"):
+                if student_file is not None and SUPABASE_URL and SUPABASE_KEY:
+                    with st.spinner("Nahrávam tvoju prácu..."):
+                        file_bytes = student_file.getvalue()
+                        public_link, cloud_path = upload_to_supabase(file_bytes, student_file.name, student_file.type)
+                        
+                        if public_link:
+                            cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, ?)", 
+                                           (student_file.name, public_link, group[0], cloud_path, student_name))
+                            conn.commit()
+                            st.success(f"🚀 Tvoj súbor bol úspešne nahraný!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Nepodarilo sa odoslať súbor do cloudu.")
+            
+            # --- ZOBRAZENIE MATERIÁLOV ---
+            st.write("---")
+            cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (group[0],))
+            materials = cursor.fetchall()
+            
+            if materials:
+                st.subheader("📚 Spoločné materiály a odovzdané úlohy:")
+                for m in materials:
+                    col1, col2 = st.columns([8, 2])
+                    with col1:
+                        # Vypíšeme aj to, kto súbor nahral
+                        st.markdown(f"📁 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
+                    with col2:
+                        # ŽIAK MÔŽE VYMAZAŤ LEN SVOJ SÚBOR (Meno sa musí presne zhodovať)
+                        if m[4] == student_name:
+                            if st.button("🗑️ Odstrániť", key=f"del_st_{m[0]}"):
+                                if m[3]: 
+                                    delete_from_supabase(m[3])
+                                cursor.execute("DELETE FROM materials WHERE id = ?", (m[0],))
+                                conn.commit()
+                                st.toast("Tvoj súbor bol odstránený!")
+                                st.rerun()
             else:
-                st.error("❌ Nesprávny kód skupiny.")
-                conn.close()
+                st.info("V tejto skupine zatiaľ nie sú žiadne materiály.")
         else:
-            st.warning("⚠️ Vyplň svoje meno aj kód skupiny.")
+            if st.button(t["join_btn"]):
+                st.error("❌ Nesprávny kód skupiny.")
+        conn.close()
 
 # --- REŽIM UČITEĽ ---
 else:
@@ -259,15 +253,15 @@ else:
                     if uploaded_file is not None and SUPABASE_URL and SUPABASE_KEY:
                         with st.spinner("Nahrávam súbor do zabezpečeného cloudu..."):
                             file_bytes = uploaded_file.getvalue()
-                            public_link = upload_to_supabase(file_bytes, uploaded_file.name, uploaded_file.type)
+                            public_link, cloud_path = upload_to_supabase(file_bytes, uploaded_file.name, uploaded_file.type)
                             
                             if public_link:
-                                cursor.execute("INSERT INTO materials (title, link, group_id) VALUES (?, ?, ?)", (uploaded_file.name, public_link, vybrana_skupina_id))
+                                cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, 'Učiteľ')", (uploaded_file.name, public_link, vybrana_skupina_id, cloud_path))
                                 conn.commit()
                                 st.success(f"🚀 Súbor úspešne nahraný do cloudu!")
                                 st.rerun()
                             else:
-                                st.error("❌ Nepodarilo sa odoslať súbor do Supabase. Skontroluj Secrets.")
+                                st.error("❌ Nepodarilo sa odoslať súbor. Skontroluj Secrets.")
                     else:
                         st.warning("⚠️ Vyber súbor a over nastavenie kľúčov v Secrets.")
             else:
@@ -275,16 +269,27 @@ else:
                 mat_link = st.text_input("Odkaz (URL):")
                 if st.button("Zdieľať odkaz"):
                     if mat_title and mat_link:
-                        cursor.execute("INSERT INTO materials (title, link, group_id) VALUES (?, ?, ?)", (mat_title, mat_link, vybrana_skupina_id))
+                        cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, NULL, 'Učiteľ')", (mat_title, mat_link, vybrana_skupina_id))
                         conn.commit()
                         st.success("✅ Odkaz úspešne pridaný!")
                         st.rerun()
             
             st.write("Doterajšie materiály v tejto skupine:")
-            cursor.execute("SELECT title, link FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
+            cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
             skupina_materialy = cursor.fetchall()
             if skupina_materialy:
                 for m in skupina_materialy:
-                    st.markdown(f"🔗 [{m[0]}]({m[1]})")
+                    c1, c2 = st.columns([8, 2])
+                    with c1:
+                        st.markdown(f"🔗 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
+                    with c2:
+                        # UČITEĽ VIDÍ TLAČIDLO NA ZMAZANIE PRI VŠETKÝCH SÚBOROCH
+                        if st.button("❌ Zmazať", key=f"del_tch_{m[0]}"):
+                            if m[3]: 
+                                delete_from_supabase(m[3])
+                            cursor.execute("DELETE FROM materials WHERE id = ?", (m[0],))
+                            conn.commit()
+                            st.success("Súbor zmazaný učiteľom!")
+                            st.rerun()
             else: st.caption("Zatiaľ žiadne materiály.")
         conn.close()
