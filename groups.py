@@ -69,13 +69,17 @@ if role == "Žiak":
     else:
         st.write(f"### {st.session_state.st_name}")
         if st.button("Odhlásiť"): st.session_state.st_id = None; st.rerun()
+        
         kod = st.text_input("Zadaj kód skupiny:")
         if st.button("Vstúpiť do skupiny"):
             conn = sqlite3.connect(DB_NAME)
             g = conn.execute("SELECT id FROM groups WHERE group_code=?", (kod.upper(),)).fetchone()
             if g:
-                try: conn.execute("INSERT INTO group_members VALUES (?, ?)", (g[0], st.session_state.st_id)); conn.commit(); st.rerun()
-                except: st.info("Už v nej si.")
+                try: 
+                    conn.execute("INSERT INTO group_members VALUES (?, ?)", (g[0], st.session_state.st_id))
+                    conn.commit(); st.success("Vitaj v skupine! ✅"); st.rerun()
+                except: st.info("V tejto skupine už si. 📁")
+            else: st.error("Kód neexistuje. ❌")
             conn.close()
         
         conn = sqlite3.connect(DB_NAME)
@@ -116,11 +120,13 @@ else: # Učiteľ
     else:
         st.write(f"### {st.session_state.tch_name}")
         if st.button("Odhlásiť"): st.session_state.tch_id = None; st.rerun()
+        
         n = st.text_input("Názov novej skupiny")
         if st.button("Vytvoriť skupinu"):
             conn = sqlite3.connect(DB_NAME)
             conn.execute("INSERT INTO groups (group_name, group_code, teacher_id) VALUES (?, ?, ?)", (n, gen_code(), st.session_state.tch_id))
             conn.commit(); conn.close(); st.rerun()
+            
         conn = sqlite3.connect(DB_NAME)
         skupiny = conn.execute("SELECT id, group_name, group_code FROM groups WHERE teacher_id=?", (st.session_state.tch_id,)).fetchall()
         for s in skupiny:
