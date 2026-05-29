@@ -28,6 +28,7 @@ DB_NAME = "tutor_platform.db"
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    # 1. Tabuľka učiteľov
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS teachers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,6 +37,16 @@ def init_db():
             password TEXT NOT NULL
         )
     ''')
+    # 2. NOVÉ: Tabuľka žiakov
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        )
+    ''')
+    # 3. Tabuľka skupín
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS groups (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,6 +56,18 @@ def init_db():
             FOREIGN KEY (teacher_id) REFERENCES teachers (id)
         )
     ''')
+    # 4. NOVÉ: Prepojovacia tabuľka (členovia skupín)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS group_members (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            group_id INTEGER,
+            student_id INTEGER,
+            FOREIGN KEY (group_id) REFERENCES groups (id),
+            FOREIGN KEY (student_id) REFERENCES students (id),
+            UNIQUE(group_id, student_id)
+        )
+    ''')
+    # 5. Tabuľka materiálov
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS materials (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,73 +96,108 @@ def remove_diacritics(text):
     return "".join([c for c in nfkd_form if not unicodedata.combining(c)])
 
 def upload_to_supabase(file_bytes, file_name, mime_type):
-    """Odošle súbor a v prípade zlyhania vráti skutočnú textovú chybu."""
     if not supabase_client:
-        return None, "Chyba: Supabase klient nie je inicializovaný. Skontroluj Secrets."
-        
+        return None, "Chyba: Supabase klient nie je inicializovaný."
     base_name = remove_diacritics(file_name)
     clean_name = "".join(c for c in base_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
-    
     try:
         response = supabase_client.storage.from_(BUCKET_NAME).upload(
-            path=unique_name,
-            file=file_bytes,
-            file_options={"content-type": mime_type}
+            path=unique_name, file=file_bytes, file_options={"content-type": mime_type}
         )
         if response:
             public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{unique_name}"
             return public_url, unique_name
     except Exception as e:
         return None, str(e)
-        
     return None, "Neznáma chyba pri nahrávaní."
 
 def delete_from_supabase(file_path):
-    if not supabase_client:
-        return False
+    if not supabase_client: return False
     try:
         response = supabase_client.storage.from_(BUCKET_NAME).remove([file_path])
         return response is not None
-    except Exception:
-        return False
+    except Exception: return False
 
-# --- JAZYKOVÉ DATA ---
-lang_data = {
-    "SK": {
-        "title": "👥 Študijné skupiny", "label": "Názov skupiny", "btn": "Vytvoriť", 
-        "login": "Prihlásenie", "register": "Registrácia", "logout": "Odhlásiť sa", 
-        "role_teacher": "Som Učiteľ", "role_student": "Som Žiak", "code_label": "Zadaj kód skupiny", 
-        "join_btn": "Vstúpiť do skupiny", "name_input": "Meno", "pwd_input": "Heslo",
-        "type_cloud": "Nahrať súbor (Uloží sa do Supabase cloudu)", "type_link": "Vložiť obyčajný internetový odkaz"
-    }
-}
+# --- ROZHRANIE STRÁNKY ---
+st.title("👥 Školská platforma (Skupiny a Súbory)")
 
-L = st.query_params.get("lang", "SK")
-t = lang_data.get(L, lang_data["SK"])
+user_role = st.radio("Vyberte svoju rolu:", ["Som Žiak", "Som Učiteľ"], horizontal=True)
 
-st.title(t["title"])
-
-user_role = st.radio("Vyberte svoju rolu:", [t["role_student"], t["role_teacher"]], horizontal=True)
-
+# ==========================================
 # --- REŽIM ŽIAK ---
-if user_role == t["role_student"]:
-    st.write("---")
-    student_name = st.text_input(f"Tvoje {t['name_input'].lower()}:", key="st_name").strip()
-    group_code_input = st.text_input(t["code_label"], key="g_code").strip().upper()
-    
-    if student_name and group_code_input:
+# ==========================================
+if user_role == "Som Žiak":
+    if "student_logged_in" not in st.session_state:
+        st.session_state.student_logged_in = False
+        st.session_state.student_id = None
+        st.session_state.student_name = ""
+
+    if not st.session_state.student_logged_in:
+        tab1, tab2 = st.tabs(["Prihlásenie Žiaka", "Registrácia Žiaka"])
+        with tab1:
+            st.subheader("Prihlásenie pre žiakov")
+            st_email = st.text_input("Email", key="st_log_email")
+            st_pwd = st.text_input("Heslo", type="password", key="st_log_pwd")
+            if st.button("Prihlásiť sa ako Žiak"):
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, name FROM students WHERE email = ? AND password = ?", (st_email, hash_password(st_pwd)))
+                user = cursor.fetchone()
+                conn.close()
+                if user:
+                    st.session_state.student_logged_in = True
+                    st.session_state.student_id = user[0]
+                    st.session_state.student_name = user[1]
+                    st.rerun()
+                else:
+                    st.error("❌ Nesprávny email alebo heslo žiaka.")
+        with tab2:
+            st.subheader("Registrácia nového žiaka")
+            st_reg_name = st.text_input("Meno a Priezvisko", key="st_reg_name")
+            st_reg_email = st.text_input("Email", key="st_reg_email")
+            st_reg_pwd = st.text_input("Heslo", type="password", key="st_reg_pwd")
+            if st.button("Zaregistrovať sa ako Žiak"):
+                if st_reg_name and st_reg_email and st_reg_pwd:
+                    conn = sqlite3.connect(DB_NAME)
+                    cursor = conn.cursor()
+                    try:
+                        cursor.execute("INSERT INTO students (name, email, password) VALUES (?, ?, ?)", (st_reg_name, st_reg_email, hash_password(st_reg_pwd)))
+                        conn.commit()
+                        st.success("✅ Žiak úspešne zaregistrovaný! Teraz sa môžeš prihlásiť.")
+                    except sqlite3.IntegrityError:
+                        st.error("❌ Tento email už žiak používa.")
+                    conn.close()
+    else:
+        st.write(f"🎓 **Ahoj, žiak {st.session_state.student_name}**")
+        if st.button("Odhlásiť sa", key="st_logout"):
+            st.session_state.student_logged_in = False
+            st.rerun()
+            
+        st.write("---")
+        
+        # Načítanie skupín, v ktorých je žiak pridaný učiteľom
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, group_name FROM groups WHERE group_code = ?", (group_code_input,))
-        group = cursor.fetchone()
+        cursor.execute('''
+            SELECT groups.id, groups.group_name, groups.group_code, teachers.name 
+            FROM group_members
+            JOIN groups ON group_members.group_id = groups.id
+            JOIN teachers ON groups.teacher_id = teachers.id
+            WHERE group_members.student_id = ?
+        ''', (st.session_state.student_id,))
+        moje_skupiny = cursor.fetchall()
         
-        if group:
-            st.success(f"🎉 Vitaj v skupine: **{group[1]}**")
+        if moje_skupiny:
+            st.subheader("📚 Tvoje predmety a skupiny:")
+            skupiny_dict = {f"📁 {g[1]} (Učiteľ: {g[3]})": g[0] for g in moje_skupiny}
+            vybrana_skupina_text = st.selectbox("Vyber si predmet na zobrazenie:", list(skupiny_dict.keys()), key="st_sk_sel")
+            vybrana_skupina_id = skupiny_dict[vybrana_skupina_text]
             
+            # Nahrávanie súboru žiakom do vybranej skupiny
             st.write("---")
-            st.subheader("📤 Odovzdať môj súbor do skupiny")
-            student_file = st.file_uploader("Vyber svoj súbor:", key="file_uploader_student")
+            st.subheader("📤 Odovzdať môj súbor do tejto skupiny")
+            student_file = st.file_uploader("Vyber svoj súbor:", key="student_f_up")
             if st.button("Poslať súbor spolužiakom a učiteľovi"):
                 if student_file is not None:
                     with st.spinner("Nahrávam tvoju prácu..."):
@@ -147,32 +205,37 @@ if user_role == t["role_student"]:
                         public_link, error_msg = upload_to_supabase(file_bytes, student_file.name, student_file.type)
                         if public_link:
                             cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, ?)", 
-                                           (student_file.name, public_link, group[0], error_msg, student_name))
+                                           (student_file.name, public_link, vybrana_skupina_id, error_msg, st.session_state.student_name))
                             conn.commit()
                             st.success(f"🚀 Tvoj súbor bol úspešne nahraný!")
                             st.rerun()
                         else:
-                            st.error(f"❌ Detail chyby zo Supabase: {error_msg}")
+                            st.error(f"❌ Detail chyby: {error_msg}")
             
+            # Zobrazenie materiálov skupiny žiakovi
             st.write("---")
-            cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (group[0],))
+            cursor.execute("SELECT id, title, link, file_path_on_cloud, uploaded_by FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
             materials = cursor.fetchall()
             if materials:
-                st.subheader("📚 Spoločné materiály:")
+                st.subheader("📚 Zdieľané materiály v tejto skupine:")
                 for m in materials:
                     col1, col2 = st.columns([8, 2])
                     with col1:
                         st.markdown(f"📁 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
                     with col2:
-                        if m[4] == student_name:
+                        if m[4] == st.session_state.student_name:
                             if st.button("🗑️ Odstrániť", key=f"del_st_{m[0]}"):
                                 if m[3]: delete_from_supabase(m[3])
                                 cursor.execute("DELETE FROM materials WHERE id = ?", (m[0],))
                                 conn.commit()
                                 st.rerun()
+        else:
+            st.info("ℹ️ Zatiaľ nie si pridaný v žiadnej skupine. Požiadaj svojho učiteľa, aby ťa pridal.")
         conn.close()
 
+# ==========================================
 # --- REŽIM UČITEĽ ---
+# ==========================================
 else:
     if "teacher_logged_in" not in st.session_state:
         st.session_state.teacher_logged_in = False
@@ -180,12 +243,12 @@ else:
         st.session_state.teacher_name = ""
 
     if not st.session_state.teacher_logged_in:
-        tab1, tab2 = st.tabs([t["login"], t["register"]])
+        tab1, tab2 = st.tabs(["Prihlásenie Učiteľa", "Registrácia Učiteľa"])
         with tab1:
-            st.subheader(t["login"])
+            st.subheader("Prihlásenie pre učiteľov")
             login_email = st.text_input("Email", key="l_email")
-            login_pwd = st.text_input(t["pwd_input"], type="password", key="l_pwd")
-            if st.button(t["login"]):
+            login_pwd = st.text_input("Heslo", type="password", key="l_pwd")
+            if st.button("Prihlásiť sa ako Učiteľ"):
                 conn = sqlite3.connect(DB_NAME)
                 cursor = conn.cursor()
                 cursor.execute("SELECT id, name FROM teachers WHERE email = ? AND password = ?", (login_email, hash_password(login_pwd)))
@@ -199,40 +262,31 @@ else:
                 else:
                     st.error("❌ Nesprávny email alebo heslo.")
         with tab2:
-            st.subheader(t["register"])
-            reg_name = st.text_input(t["name_input"])
+            st.subheader("Registrácia nového učiteľa")
+            reg_name = st.text_input("Meno a Priezvisko")
             reg_email = st.text_input("Email")
-            reg_pwd = st.text_input(t["pwd_input"], type="password")
-            if st.button(t["register"]):
+            reg_pwd = st.text_input("Heslo", type="password")
+            if st.button("Zaregistrovať sa ako Učiteľ"):
                 if reg_name and reg_email and reg_pwd:
                     conn = sqlite3.connect(DB_NAME)
                     cursor = conn.cursor()
                     try:
                         cursor.execute("INSERT INTO teachers (name, email, password) VALUES (?, ?, ?)", (reg_name, reg_email, hash_password(reg_pwd)))
                         conn.commit()
-                        
-                        cursor.execute("SELECT id, name FROM teachers WHERE email = ?", (reg_email,))
-                        new_user = cursor.fetchone()
-                        if new_user:
-                            st.session_state.teacher_logged_in = True
-                            st.session_state.teacher_id = new_user[0]
-                            st.session_state.teacher_name = new_user[1]
-                        conn.close()
-                        st.success("✅ Úspešne zaregistrované!")
-                        st.rerun()
+                        st.success("✅ Úspešne zaregistrované! Teraz sa môžete prihlásiť.")
                     except sqlite3.IntegrityError: 
-                        st.error("❌ Email sa používa.")
-                        conn.close()
+                        st.error("❌ Tento email sa už používa.")
+                    conn.close()
     else:
         st.write(f"👋 **Ahoj, profesor {st.session_state.teacher_name}**")
-        if st.button(t["logout"]):
+        if st.button("Odhlásiť sa", key="tch_logout"):
             st.session_state.teacher_logged_in = False
             st.rerun()
             
         st.write("---")
         st.subheader("🆕 Vytvoriť novú skupinu")
-        n = st.text_input(t["label"])
-        if st.button(t["btn"]):
+        n = st.text_input("Názov skupiny (napr. 4.A Biológia):")
+        if st.button("Vytvoriť skupinu"):
             if n.strip() != "":
                 code = generate_group_code()
                 conn = sqlite3.connect(DB_NAME)
@@ -251,30 +305,77 @@ else:
         
         if moje_skupiny:
             skupiny_dict = {f"📁 {g[1]} (Kód: {g[2]})": g[0] for g in moje_skupiny}
-            vybrana_skupina_text = st.selectbox("Vyberte skupinu:", list(skupiny_dict.keys()))
+            vybrana_skupina_text = st.selectbox("Vyberte skupinu pre správu:", list(skupiny_dict.keys()))
             vybrana_skupina_id = skupiny_dict[vybrana_skupina_text]
             
-            # --- 🌟 NOVÉ: TLAČIDLO NA VYMAZANIE CELEJ SKUPINY ---
-            if st.button("🗑️ Vymazať celú skupinu vrátane súborov", type="primary"):
-                with st.spinner("Mažem skupinu a čistím cloud..."):
-                    # 1. Nájdeme a zmažeme všetky prislúchajúce súbory na Supabase cloude
+            if st.button("🗑| Vymazať celú skupinu vrátane súborov", type="primary"):
+                with st.spinner("Mažem skupinu..."):
                     cursor.execute("SELECT file_path_on_cloud FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
-                    subory_na_zmazanie = cursor.fetchall()
-                    for subor in subory_na_zmazanie:
-                        if subor[0]:
-                            delete_from_supabase(subor[0])
-                    
-                    # 2. Vymažeme materiály z lokálnej databázy
+                    subory = cursor.fetchall()
+                    for s in subory:
+                        if s[0]: delete_from_supabase(s[0])
                     cursor.execute("DELETE FROM materials WHERE group_id = ?", (vybrana_skupina_id,))
-                    # 3. Vymažeme samotnú skupinu
+                    cursor.execute("DELETE FROM group_members WHERE group_id = ?", (vybrana_skupina_id,))
                     cursor.execute("DELETE FROM groups WHERE id = ?", (vybrana_skupina_id,))
                     conn.commit()
-                st.success("💥 Skupina a všetky jej materiály boli úspešne vymazané!")
+                st.success("Skupina bola vymazaná.")
                 st.rerun()
             
+            # --- 🌟 NOVÉ: SEKCIJA PRE PRIDÁVANIE ŽIAKOV DO SKUPINY ---
             st.write("---")
-            typ_materialu = st.radio("Typ materiálu:", [t["type_cloud"], t["type_link"]], horizontal=True)
-            if typ_materialu == t["type_cloud"]:
+            st.subheader("👥 Správa študentov v tejto skupine")
+            
+            # Načítanie všetkých registrovaných žiakov v systéme
+            cursor.execute("SELECT id, name, email FROM students")
+            vsetci_studenti = cursor.fetchall()
+            
+            # Načítanie žiakov, ktorí už v tejto skupine sú
+            cursor.execute('''
+                SELECT students.id, students.name FROM group_members 
+                JOIN students ON group_members.student_id = students.id 
+                WHERE group_members.group_id = ?
+            ''', (vybrana_skupina_id,))
+            clenovia_skupiny = cursor.fetchall()
+            clenovia_ids = [s[0] for s in clenovia_skupiny]
+            
+            col_add, col_list = st.columns(2)
+            
+            with col_add:
+                st.write("**Pridať žiaka do skupiny:**")
+                neclenovia = [s for s in vsetci_studenti if s[0] not in clenovia_ids]
+                if neclenovia:
+                    student_options = {f"{s[1]} ({s[2]})": s[0] for s in neclenovia}
+                    vybrany_student_na_pridanie = st.selectbox("Vyberte žiaka:", list(student_options.keys()), key="sel_st_add")
+                    if st.button("➕ Pridať žiaka do skupiny"):
+                        st_id = student_options[vybrany_student_na_pridanie]
+                        try:
+                            cursor.execute("INSERT INTO group_members (group_id, student_id) VALUES (?, ?)", (vybrana_skupina_id, st_id))
+                            conn.commit()
+                            st.success("Žiak bol úspešne pridaný!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Chyba: {e}")
+                else:
+                    st.info("Všetci registrovaní žiaci sú už v tejto skupine.")
+                    
+            with col_list:
+                st.write("**Žiaci aktuálne v skupine:**")
+                if clenovia_skupiny:
+                    for clen in clenovia_skupiny:
+                        c_name, c_btn = st.columns([7, 3])
+                        c_name.write(f"• {clen[1]}")
+                        if c_btn.button("Odobrať", key=f"rem_st_{clen[0]}"):
+                            cursor.execute("DELETE FROM group_members WHERE group_id = ? AND student_id = ?", (vybrana_skupina_id, clen[0]))
+                            conn.commit()
+                            st.rerun()
+                else:
+                    st.info("V tejto skupine zatiaľ nie sú žiadni žiaci.")
+
+            # --- SPRÁVA MATERIÁLOV ---
+            st.write("---")
+            st.subheader("📁 Materiály skupiny")
+            typ_materialu = st.radio("Typ materiálu:", ["Nahrať súbor (Uloží sa do Supabase cloudu)", "Vložiť obyčajný internetový odkaz"], horizontal=True)
+            if typ_materialu == "Nahrať súbor (Uloží sa do Supabase cloudu)":
                 uploaded_file = st.file_uploader("Vyberte súbor:")
                 if st.button("Zdieľať súbor cez Cloud"):
                     if uploaded_file is not None:
@@ -285,8 +386,7 @@ else:
                                 cursor.execute("INSERT INTO materials (title, link, group_id, file_path_on_cloud, uploaded_by) VALUES (?, ?, ?, ?, 'Učiteľ')", (uploaded_file.name, public_link, vybrana_skupina_id, error_msg))
                                 conn.commit()
                                 st.rerun()
-                            else:
-                                st.error(f"❌ Detail chyby zo Supabase: {error_msg}")
+                            else: st.error(f"❌ Detail chyby: {error_msg}")
             else:
                 mat_title = st.text_input("Názov odkazu:")
                 mat_link = st.text_input("Odkaz (URL):")
@@ -301,8 +401,7 @@ else:
             if skupina_materialy:
                 for m in skupina_materialy:
                     c1, c2 = st.columns([8, 2])
-                    with c1:
-                        st.markdown(f"🔗 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
+                    with c1: st.markdown(f"🔗 [{m[1]}]({m[2]}) *(Pridal/a: {m[4]})*")
                     with c2:
                         if st.button("❌ Zmazať", key=f"del_tch_{m[0]}"):
                             if m[3]: delete_from_supabase(m[3])
