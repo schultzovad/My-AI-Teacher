@@ -3,6 +3,7 @@ import sqlite3
 import hashlib
 import random
 import string
+import unicodedata
 from supabase import create_client
 
 # --- NASTAVENIE STRÁNKY ---
@@ -18,7 +19,7 @@ supabase_client = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
         supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception as e:
+    except Exception:
         pass
 
 # --- INICIALIZÁCIA DATABÁZY ---
@@ -66,12 +67,19 @@ def hash_password(password):
 def generate_group_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
+def remove_diacritics(text):
+    """Odstráni slovenské dĺžne a mäkčene z názvu súboru pre Supabase."""
+    nfkd_form = unicodedata.normalize('NFKD', text)
+    return "".join([c for c in nfkd_form if not unicodedata.combining(c)])
+
 def upload_to_supabase(file_bytes, file_name, mime_type):
     """Odošle súbor a v prípade zlyhania vráti skutočnú textovú chybu."""
     if not supabase_client:
         return None, "Chyba: Supabase klient nie je inicializovaný. Skontroluj Secrets."
         
-    clean_name = "".join(c for c in file_name if c.isalnum() or c in "._-").strip()
+    # Odstránenie diakritiky a nepovolených znakov
+    base_name = remove_diacritics(file_name)
+    clean_name = "".join(c for c in base_name if c.isalnum() or c in "._-").strip()
     unique_name = f"{generate_group_code()}_{clean_name}"
     
     try:
