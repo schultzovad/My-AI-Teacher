@@ -1,4 +1,5 @@
 import streamlit as st
+from db_utils import supabase
 
 # 1. NASTAVENIE STRÁNKY A ŠTÝLOV
 st.set_page_config(layout="wide", page_title="Študovňa")
