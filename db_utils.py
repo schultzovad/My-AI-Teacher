@@ -1,5 +1,7 @@
 import streamlit as st
 from supabase import create_client
 
-# Tieto kľúče máš v Streamlit Secrets
-supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+# Toto načíta kľúče z "Secrets" v Streamlit Cloud
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+supabase = create_client(url, key)
