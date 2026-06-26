@@ -1,10 +1,5 @@
-import sqlite3
-import hashlib
+import streamlit as st
+from supabase import create_client
 
-DB_NAME = "tutor_platform.db"
-
-def get_db():
-    return sqlite3.connect(DB_NAME)
-
-def hash_pwd(p):
-    return hashlib.sha256(p.encode()).hexdigest()
+# Tieto kľúče máš v Streamlit Secrets
+supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
