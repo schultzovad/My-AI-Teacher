@@ -3,6 +3,22 @@ import google.generativeai as genai
 import pypdf
 import docx
 from PIL import Image
+from db_utils import supabase # NOVÝ IMPORT
+
+# ... (tvoja časť s API KĽÚČOM ostáva rovnaká) ...
+genai.configure(api_key=st.secrets.get("tutor") or st.secrets.get("GOOGLE_API_KEY"))
+model_ai = genai.GenerativeModel('gemini-3.1-flash-lite')
+
+if "m" not in st.session_state: st.session_state.m = []
+if "doc_content" not in st.session_state: st.session_state.doc_content = ""
+
+# Automatické prihlásenie cez URL (ak prídeš z Groups)
+user_id = st.query_params.get("user_id")
+if user_id and "user" not in st.session_state:
+    user_data = supabase.table("students").select("*").eq("id", user_id).single().execute()
+    st.session_state.user = user_data.data
+
+# ... (zvyšok tvojho kódu app.py ponechaj bezo zmeny) ...
 
 # 1. NASTAVENIE API
 api_key = st.secrets.get("tutor") or st.secrets.get("GOOGLE_API_KEY")
