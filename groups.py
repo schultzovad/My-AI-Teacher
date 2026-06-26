@@ -2,13 +2,9 @@ import streamlit as st
 import hashlib
 import random
 import string
-from db_utils import supabase # NOVÝ IMPORT
-
-# ... (tvoj CSS dizajn ostáva) ...
+from db_utils import supabase
 
 def hash_pwd(p): return hashlib.sha256(p.encode()).hexdigest()
-
-# ... (funkcie upload_to_supabase ostať môžu, ak fungujú) ...
 
 st.title("🎓 Školský portál")
 role = st.radio("Zvoľ si rolu:", ["Žiak", "Učiteľ"], horizontal=True)
@@ -25,7 +21,6 @@ if role == "Žiak":
                 st.session_state.st_id = user.data[0]['id']
                 st.session_state.st_name = user.data[0]['name']
                 st.rerun()
-    # ... (ostatné časti podľa rovnakého vzoru s supabase.table()...)
 
 # --- MODERNÝ DIZAJN (CSS) ---
 st.markdown("""
