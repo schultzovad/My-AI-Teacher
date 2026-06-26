@@ -1,10 +1,31 @@
 import streamlit as st
-import sqlite3
 import hashlib
 import random
 import string
-import unicodedata
-from supabase import create_client
+from db_utils import supabase # NOVÝ IMPORT
+
+# ... (tvoj CSS dizajn ostáva) ...
+
+def hash_pwd(p): return hashlib.sha256(p.encode()).hexdigest()
+
+# ... (funkcie upload_to_supabase ostať môžu, ak fungujú) ...
+
+st.title("🎓 Školský portál")
+role = st.radio("Zvoľ si rolu:", ["Žiak", "Učiteľ"], horizontal=True)
+
+if role == "Žiak":
+    # Prihlasovanie cez Supabase
+    tab1, tab2 = st.tabs(["Prihlásiť", "Registrovať"])
+    with tab1:
+        name = st.text_input("Meno", key="st_login_name")
+        pwd = st.text_input("Heslo", type="password", key="st_login_pwd")
+        if st.button("Prihlásiť"):
+            user = supabase.table("students").select("*").eq("name", name).eq("password", hash_pwd(pwd)).execute()
+            if user.data:
+                st.session_state.st_id = user.data[0]['id']
+                st.session_state.st_name = user.data[0]['name']
+                st.rerun()
+    # ... (ostatné časti podľa rovnakého vzoru s supabase.table()...)
 
 # --- MODERNÝ DIZAJN (CSS) ---
 st.markdown("""
